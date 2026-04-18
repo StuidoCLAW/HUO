@@ -1,0 +1,24 @@
+{
+  "name": "huo-server",
+  "version": "0.1.0",
+  "description": "Heads Up Omaha — server-side game engine",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "parity": "npx tsx tests/parity_emit.ts 42 10000 > /tmp/ts_parity.txt && python tests/parity_ref.py 42 10000 > /tmp/py_parity.txt && diff /tmp/ts_parity.txt /tmp/py_parity.txt && echo 'PARITY OK: 0 diffs across 10k hands'",
+    "parity:trips": "npx tsx tests/parity_emit.ts 42 10000 trips > /tmp/ts_parity.txt && python tests/parity_ref.py 42 10000 trips > /tmp/py_parity.txt && diff /tmp/ts_parity.txt /tmp/py_parity.txt && echo 'PARITY OK (trips): 0 diffs across 10k hands'",
+    "build": "tsc",
+    "dev": "tsx watch src/server.ts"
+  },
+  "keywords": ["poker", "omaha", "casino", "igaming"],
+  "author": "Clawbyte Ltd",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.4"
+  }
+}

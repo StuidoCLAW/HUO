@@ -1,4 +1,6 @@
-# HUOHeads Up Omaha — server-side game engine**
+# huo-server
+
+**Heads Up Omaha — server-side game engine**
 
 Node.js + TypeScript + Fastify API that owns all game truth: RNG, shuffle, hand evaluation, qualifier, paytables, and bet resolution. Companion to `huo-client` (the browser UI).
 

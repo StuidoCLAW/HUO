@@ -21,6 +21,9 @@
   ],
   "author": "Clawbyte Ltd",
   "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20"
+  },
   "devDependencies": {
     "@types/node": "^25.6.0",
     "happy-dom": "^20.9.0",

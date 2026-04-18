@@ -10,7 +10,8 @@
     "parity": "npx tsx tests/parity_emit.ts 42 10000 > /tmp/ts_parity.txt && python tests/parity_ref.py 42 10000 > /tmp/py_parity.txt && diff /tmp/ts_parity.txt /tmp/py_parity.txt && echo 'PARITY OK: 0 diffs across 10k hands'",
     "parity:trips": "npx tsx tests/parity_emit.ts 42 10000 trips > /tmp/ts_parity.txt && python tests/parity_ref.py 42 10000 trips > /tmp/py_parity.txt && diff /tmp/ts_parity.txt /tmp/py_parity.txt && echo 'PARITY OK (trips): 0 diffs across 10k hands'",
     "build": "tsc",
-    "dev": "tsx watch src/server.ts"
+    "build:engine": "tsc --project tsconfig.engine.json",
+    "dev": "tsx watch src/http/server.ts"
   },
   "keywords": [
     "poker",

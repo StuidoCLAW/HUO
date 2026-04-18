@@ -13,7 +13,16 @@ The companion repo is `huo-client` (separate).
 Read in order:
 1. `PLAN.md` — full build plan, locked specs, phase definitions
 2. `README.md` — tech overview, quick start, testing
-3. The existing `src/*.ts` files to understand patterns
+3. The existing `src/engine/*.ts` and `src/http/*.ts` files to understand patterns
+
+## Layout
+
+- `src/engine/` — self-contained maths core (cards, rng, evaluator, payouts, game). Zero external deps. Exportable as a standalone bundle via `npm run build:engine` → `dist/engine/`. This is what gets shipped to certifiers.
+- `src/http/` — Fastify adapter (session, schemas, resolve, server). Depends on `src/engine/`.
+- `api/` — Vercel serverless entry that wraps `src/http/server.ts`.
+- `client/` — the browser UI (Phase 3, not built yet).
+
+The engine must never import from `src/http/`. If you're tempted, the thing you need belongs in the engine.
 
 ## Locked game parameters — DO NOT CHANGE without explicit Jake confirmation
 
@@ -41,7 +50,7 @@ Jake has a specific working style developed over many sessions:
 
 ### Parity is sacred
 
-Before ANY change to `src/evaluator.ts`, `src/payouts.ts`, `src/game.ts`, or `src/rng.ts`, you must run and pass the parity check:
+Before ANY change to `src/engine/evaluator.ts`, `src/engine/payouts.ts`, `src/engine/game.ts`, or `src/engine/rng.ts`, you must run and pass the parity check:
 
 ```bash
 npx tsx tests/parity_emit.ts 42 10000 > /tmp/ts.txt

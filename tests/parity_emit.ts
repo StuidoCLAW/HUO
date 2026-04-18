@@ -2,8 +2,8 @@
  * Emit a parity stream matching parity_ref.py output format.
  * One line per hand: pipe-separated fields.
  */
-import { SeededRng } from '../src/rng.js';
-import { playHand, parityStrategy } from '../src/game.js';
+import { SeededRng } from '../src/engine/rng.js';
+import { playHand, parityStrategy } from '../src/engine/game.js';
 
 const seed = BigInt(process.argv[2] ?? '42');
 const n = Number(process.argv[3] ?? '10000');

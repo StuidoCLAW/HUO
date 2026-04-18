@@ -31,17 +31,36 @@ npm run parity        # 10k-hand TS vs Python parity diff (must output 0)
 
 ```
 src/
-  cards.ts       — 0..51 card encoding, ranks, suits
-  rng.ts         — ProductionRng (crypto.randomBytes) + SeededRng (xoshiro256** for tests)
-  evaluator.ts   — 5-card evaluator + Omaha 2+3 wrapper
-  payouts.ts     — qualifier + Blind + Trips paytables + resolveBets()
-  game.ts        — playHand() orchestrator + Strategy interface
+  engine/                — standalone maths core (no external deps)
+    cards.ts             — 0..51 card encoding, ranks, suits
+    rng.ts               — ProductionRng (crypto.randomBytes) + SeededRng (xoshiro256** for tests)
+    evaluator.ts         — 5-card evaluator + Omaha 2+3 wrapper
+    payouts.ts           — qualifier + Blind + Trips paytables + resolveBets()
+    game.ts              — playHand() orchestrator + Strategy interface
+    index.ts             — barrel export
+  http/                  — Fastify adapter over the engine
+    session.ts           — in-memory session store
+    schemas.ts           — Zod request schemas
+    resolve.ts           — RESOLVED payload builder
+    server.ts            — buildServer() + routes
+
+api/
+  index.ts               — Vercel serverless entry (wraps src/http/server.ts)
 
 tests/
-  core.test.ts   — Vitest unit tests (18)
-  parity_ref.py  — Python reference implementation (mirror of TS, for parity diffing)
-  parity_emit.ts — emits hand-stream for TS side of parity diff
-  summarise.py   — aggregate stats on a parity stream
+  core.test.ts           — Vitest unit tests (18)
+  http.test.ts           — Fastify integration tests (15)
+  parity_ref.py          — Python reference (mirror of TS, for parity diffing)
+  parity_emit.ts         — emits hand-stream for TS side of parity diff
+  summarise.py           — aggregate stats on a parity stream
+```
+
+### Exporting the engine standalone
+
+The maths core is export-ready for certifier submission (iTechLabs / GLI) and for a future Rust port. Everything it needs lives inside `src/engine/`, with zero imports outside itself.
+
+```bash
+npm run build:engine     # emits JS + .d.ts to dist/engine/
 ```
 
 ## Parity testing

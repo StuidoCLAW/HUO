@@ -7,7 +7,7 @@
  */
 
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { buildServer } from '../src/server.js';
+import { buildServer } from '../src/http/server.js';
 
 let appPromise: ReturnType<typeof buildAndReady> | null = null;
 

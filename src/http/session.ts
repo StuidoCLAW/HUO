@@ -10,10 +10,10 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import type { Card } from './cards.js';
-import { makeDeck } from './cards.js';
-import { shuffle, ProductionRng } from './rng.js';
-import type { Street } from './game.js';
+import type { Card } from '../engine/cards.js';
+import { makeDeck } from '../engine/cards.js';
+import { shuffle, ProductionRng } from '../engine/rng.js';
+import type { Street } from '../engine/game.js';
 
 export type SessionState = 'PREFLOP' | 'FLOP' | 'RIVER' | 'RESOLVED';
 

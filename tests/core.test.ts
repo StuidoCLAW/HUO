@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { evaluate5, bestOmahaHand, bestOmahaPairRank, isRoyalOmaha, HAND_CLASS } from '../src/evaluator.js';
-import { dealerQualifies, resolveBets, blindPayoutOnWin, tripsPayout } from '../src/payouts.js';
-import { SeededRng, shuffle } from '../src/rng.js';
-import { makeDeck } from '../src/cards.js';
-import { playHand, parityStrategy } from '../src/game.js';
+import { evaluate5, bestOmahaHand, bestOmahaPairRank, isRoyalOmaha, HAND_CLASS } from '../src/engine/evaluator.js';
+import { dealerQualifies, resolveBets, blindPayoutOnWin, tripsPayout } from '../src/engine/payouts.js';
+import { SeededRng, shuffle } from '../src/engine/rng.js';
+import { makeDeck } from '../src/engine/cards.js';
+import { playHand, parityStrategy } from '../src/engine/game.js';
 
 // Helper: build a card from rank (0=2..12=A) and suit (0=s,1=h,2=d,3=c)
 const C = (rank: number, suit: number) => (rank << 2) | suit;

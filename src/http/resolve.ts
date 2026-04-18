@@ -5,9 +5,9 @@
  * and packages the result for the HTTP layer. No game-design decisions here.
  */
 
-import type { Card } from './cards.js';
-import { bestOmahaHand, HAND_CLASS_NAMES, type HandClass } from './evaluator.js';
-import { resolveBets, type BetResult } from './payouts.js';
+import type { Card } from '../engine/cards.js';
+import { bestOmahaHand, HAND_CLASS_NAMES, type HandClass } from '../engine/evaluator.js';
+import { resolveBets, type BetResult } from '../engine/payouts.js';
 import type { Session } from './session.js';
 
 export interface ResolvedHand {

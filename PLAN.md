@@ -72,7 +72,7 @@ npm install --save-dev @types/node tsx
 
 ### Files to create
 
-#### `src/session.ts`
+#### `src/http/session.ts`
 
 In-memory session store keyed by sessionId (UUID). TTL 30 min. Each session holds:
 
@@ -96,7 +96,7 @@ interface Session {
 
 Export functions: `createSession(input) -> Session`, `getSession(id) -> Session`, `updateSession(id, patch)`, `deleteSession(id)`. Reap expired sessions on each access.
 
-#### `src/schemas.ts`
+#### `src/http/schemas.ts`
 
 Zod schemas for every request body. Validate strictly.
 
@@ -113,7 +113,7 @@ export const StreetActionSchema = z.object({
 });
 ```
 
-#### `src/server.ts`
+#### `src/http/server.ts`
 
 Fastify app. Routes:
 
@@ -272,7 +272,7 @@ When continuing this build:
 
 1. **Read `PLAN.md` (this file) and `huo-server/README.md` first.**
 2. **Do not change locked game parameters** (paytables, qualifier, multipliers) without explicit Jake confirmation.
-3. **Do not break parity.** Before committing any change to `src/evaluator.ts`, `src/payouts.ts`, `src/game.ts`, or `src/rng.ts`, re-run the parity test:
+3. **Do not break parity.** Before committing any change to `src/engine/evaluator.ts`, `src/engine/payouts.ts`, `src/engine/game.ts`, or `src/engine/rng.ts`, re-run the parity test:
    ```bash
    npx tsx tests/parity_emit.ts 42 10000 > /tmp/ts.txt
    python tests/parity_ref.py 42 10000 > /tmp/py.txt

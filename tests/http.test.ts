@@ -4,8 +4,8 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { buildServer, VERSION } from '../src/server.js';
-import { _resetStoreForTests } from '../src/session.js';
+import { buildServer, VERSION } from '../src/http/server.js';
+import { _resetStoreForTests } from '../src/http/session.js';
 
 async function newApp() {
   const app = buildServer();

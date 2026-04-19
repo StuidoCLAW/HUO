@@ -188,10 +188,7 @@
   font-weight: 600;
 }
 .bet-spot .bet-amount {
-  font-size: 11px;
-  margin-top: 1px;
-  color: var(--ivory);
-  opacity: 0.9;
+  display: none;
 }
 
 /* Circle bets — ANTE / BLIND / PLAY */

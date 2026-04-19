@@ -148,26 +148,38 @@ export async function renderResolved(root, state) {
     if (slot && isFaceDown(slot)) await flipCard(slot, r.dealerHole[i]);
   }
 
-  setSpot(root, 'play', r.playMultiplier * state.stakes.ante);
+  // Each spot shows the amount returned to the player: original stake
+  // plus net payout, floored at 0 (a losing bet leaves the spot empty).
+  // A push leaves the stake untouched. A win shows stake + winnings.
+  const anteReturn  = Math.max(0, state.stakes.ante  + r.payouts.ante);
+  const blindReturn = Math.max(0, state.stakes.blind + r.payouts.blind);
+  const tripsReturn = Math.max(0, state.stakes.trips + r.payouts.trips);
+  const playStake   = r.playMultiplier * state.stakes.ante;
+  const playReturn  = Math.max(0, playStake + r.payouts.play);
+  setSpot(root, 'ante',  anteReturn);
+  setSpot(root, 'blind', blindReturn);
+  setSpot(root, 'trips', tripsReturn);
+  setSpot(root, 'play',  playReturn);
 
   const banner = root.querySelector('#result-banner');
   const head = root.querySelector('#result-headline');
   const detail = root.querySelector('#result-detail');
   if (banner && head && detail) {
+    const qualifierNote = !r.folded && !r.dealerQualified
+      ? " Dealer didn't qualify — ante pushes."
+      : '';
     if (r.folded) {
       head.textContent = 'Folded';
-      detail.textContent = `Lost ${fmt(Math.abs(r.payouts.ante + r.payouts.blind))}`;
+      detail.textContent = `Lost ${fmt(Math.abs(r.payouts.ante + r.payouts.blind))}.`;
     } else if (r.tie) {
       head.textContent = 'Push';
-      detail.textContent = `Ante & play returned. Net ${fmt(r.totalReturn)}.`;
+      detail.textContent = `Tie on showdown.${qualifierNote} Net ${fmt(r.totalReturn)}.`;
     } else if (r.playerWon) {
       head.textContent = 'You win';
-      detail.textContent = `${r.playerHand.className} beats ${r.dealerHand.className}. Net ${fmt(r.totalReturn)}.`;
+      detail.textContent = `${r.playerHand.className} beats ${r.dealerHand.className}.${qualifierNote} Net ${fmt(r.totalReturn)}.`;
     } else {
       head.textContent = 'Dealer wins';
-      detail.textContent = r.dealerQualified
-        ? `${r.dealerHand.className} beats ${r.playerHand.className}. Net ${fmt(r.totalReturn)}.`
-        : `Dealer didn't qualify. Net ${fmt(r.totalReturn)}.`;
+      detail.textContent = `${r.dealerHand.className} beats ${r.playerHand.className}.${qualifierNote} Net ${fmt(r.totalReturn)}.`;
     }
     banner.hidden = false;
   }

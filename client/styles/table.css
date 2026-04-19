@@ -20,7 +20,7 @@
   background:
     radial-gradient(ellipse at 50% 45%, var(--felt-outer) 0%, var(--felt-inner) 55%, var(--felt-edge) 100%);
   display: grid;
-  grid-template-rows: 40px auto auto auto 1fr auto auto auto;
+  grid-template-rows: 40px auto auto auto auto auto auto auto;
   overflow: hidden;
 }
 

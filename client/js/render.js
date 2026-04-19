@@ -132,19 +132,14 @@ export async function renderResolved(root, state) {
     return !!card && !card.classList.contains('flipped');
   };
 
-  // Reveal the board in dramatic order: flop as a trio, then turn, then river.
-  // Only flip slots that are still face-down — cards already revealed stay put.
+  // Reveal the board in dramatic order: flop one at a time, then turn,
+  // then river. Only flip slots that are still face-down — cards already
+  // revealed stay put.
   if (r.board?.length === 5) {
-    const flopSlots = [0, 1, 2]
-      .map((i) => ({ slot: slotFor(root, `board-${i}`), id: r.board[i] }))
-      .filter((x) => x.slot && isFaceDown(x.slot));
-    if (flopSlots.length) {
-      await Promise.all(flopSlots.map((x) => flipCard(x.slot, x.id)));
+    for (let i = 0; i < 5; i++) {
+      const slot = slotFor(root, `board-${i}`);
+      if (slot && isFaceDown(slot)) await flipCard(slot, r.board[i]);
     }
-    const turnSlot = slotFor(root, 'board-3');
-    if (turnSlot && isFaceDown(turnSlot)) await flipCard(turnSlot, r.board[3]);
-    const riverSlot = slotFor(root, 'board-4');
-    if (riverSlot && isFaceDown(riverSlot)) await flipCard(riverSlot, r.board[4]);
   }
 
   // Flip dealer hole cards one by one for casino drama.

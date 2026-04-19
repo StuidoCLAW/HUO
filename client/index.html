@@ -61,22 +61,36 @@
         <div class="centre-stack">
           <div class="wordmark">HUO</div>
           <div class="bet-cluster">
-            <button class="bet-spot" data-spot="trips" aria-label="Trips bet">
-              <span class="bet-label">TRIPS</span>
-              <span class="bet-amount">£0</span>
-            </button>
-            <button class="bet-spot" data-spot="ante" aria-label="Ante bet">
-              <span class="bet-label">ANTE</span>
-              <span class="bet-amount">£0</span>
-            </button>
-            <button class="bet-spot" data-spot="blind" aria-label="Blind bet">
-              <span class="bet-label">BLIND</span>
-              <span class="bet-amount">£0</span>
-            </button>
-            <button class="bet-spot bet-spot-play" data-spot="play" aria-label="Play bet">
-              <span class="bet-label">PLAY</span>
-              <span class="bet-amount">£0</span>
-            </button>
+            <div class="bet-row bet-row-side">
+              <button class="bet-spot bet-spot-diamond bet-spot-trips" data-spot="trips" aria-label="Trips bet">
+                <span class="bet-spot-inner">
+                  <span class="bet-label">TRIPS</span>
+                  <span class="bet-amount">£0</span>
+                </span>
+              </button>
+            </div>
+            <div class="bet-row bet-row-main">
+              <button class="bet-spot bet-spot-circle bet-spot-ante" data-spot="ante" aria-label="Ante bet">
+                <span class="bet-label">ANTE</span>
+                <span class="bet-amount">£0</span>
+              </button>
+              <span class="bet-equals" aria-hidden="true">=</span>
+              <button class="bet-spot bet-spot-circle bet-spot-blind" data-spot="blind" aria-label="Blind bet">
+                <span class="bet-label">BLIND</span>
+                <span class="bet-amount">£0</span>
+              </button>
+            </div>
+            <div class="bet-row bet-row-play">
+              <button class="bet-spot bet-spot-circle bet-spot-play" data-spot="play" aria-label="Play bet">
+                <span class="bet-label">PLAY</span>
+                <span class="bet-amount">£0</span>
+              </button>
+              <ul class="play-rules" aria-hidden="true">
+                <li><b>3×</b> on pocket cards</li>
+                <li><b>2×</b> on flop</li>
+                <li><b>1×</b> on river</li>
+              </ul>
+            </div>
           </div>
           <div class="limits-plaque">£1 — £100</div>
         </div>

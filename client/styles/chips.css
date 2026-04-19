@@ -41,6 +41,12 @@
   transform: translateX(-50%);
   pointer-events: none;
 }
+/* Diamond-shaped TRIPS spot is rotated 45deg, so un-rotate the chip stack
+   and nudge it past the bottom point of the diamond. */
+.bet-spot-diamond .chip-stack {
+  transform: translateX(-50%) rotate(-45deg);
+  bottom: -28px;
+}
 .bet-spot .chip-stack .chip {
   width: 32px;
   height: 32px;

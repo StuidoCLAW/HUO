@@ -153,43 +153,120 @@
 
 .bet-cluster {
   display: flex;
-  gap: 18px;
+  flex-direction: column;
   align-items: center;
+  gap: 18px;
   margin-top: 6px;
 }
 
+.bet-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  position: relative;
+}
+
 .bet-spot {
-  width: 96px;
-  height: 96px;
-  border-radius: 50%;
-  border: 2px solid var(--gold);
-  background: radial-gradient(circle, rgba(212,168,74,0.08) 0%, rgba(0,0,0,0.45) 100%);
-  color: var(--ivory);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   position: relative;
-  transition: transform 120ms ease, box-shadow 120ms ease;
+  color: var(--ivory);
+  background: rgba(0, 0, 0, 0.35);
+  transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
 }
 .bet-spot:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 0 0 4px rgba(212, 168, 74, 0.2);
+  filter: brightness(1.1);
 }
 .bet-spot .bet-label {
   font-size: 11px;
-  letter-spacing: 0.2em;
-  color: var(--gold);
+  letter-spacing: 0.18em;
   text-transform: uppercase;
+  font-weight: 600;
 }
 .bet-spot .bet-amount {
-  font-size: 13px;
+  font-size: 12px;
+  margin-top: 2px;
   color: var(--ivory);
-  margin-top: 4px;
+  opacity: 0.9;
 }
-.bet-spot-play {
-  border-color: var(--ivory);
-  opacity: 0.8;
+
+/* Circle bets — ANTE / BLIND / PLAY */
+.bet-spot-circle {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  border: 3px solid currentColor;
+}
+.bet-spot-ante  { color: #f4f0e2; }
+.bet-spot-ante  .bet-label { color: #f4f0e2; }
+.bet-spot-blind { color: #e85a8c; }
+.bet-spot-blind .bet-label { color: #e85a8c; }
+.bet-spot-play  { color: #f4d23a; }
+.bet-spot-play  .bet-label { color: #f4d23a; }
+
+/* Diamond bet — TRIPS (rotated square with text un-rotated) */
+.bet-spot-diamond {
+  width: 78px;
+  height: 78px;
+  transform: rotate(45deg);
+  border: 3px solid currentColor;
+  border-radius: 6px;
+  padding: 0;
+}
+.bet-spot-diamond:hover:not(:disabled) {
+  transform: rotate(45deg) translateY(-2px);
+}
+.bet-spot-diamond .bet-spot-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transform: rotate(-45deg);
+}
+.bet-spot-trips { color: #f08a3c; }
+.bet-spot-trips .bet-label { color: #f08a3c; }
+
+/* "=" between ANTE and BLIND */
+.bet-equals {
+  font-size: 28px;
+  color: var(--ivory);
+  opacity: 0.85;
+  font-weight: 300;
+  font-family: "Georgia", serif;
+}
+
+/* Raise rules text next to PLAY */
+.play-rules {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: rgba(248, 244, 232, 0.85);
+  text-align: left;
+  line-height: 1.5;
+}
+.play-rules li b {
+  color: #f4d23a;
+  font-weight: 700;
+  margin-right: 4px;
+}
+.bet-row-play {
+  gap: 16px;
+}
+
+/* Win-flash colour adjusted to match each spot's accent */
+.bet-spot-circle.win-flash,
+.bet-spot-diamond.win-flash {
+  animation: win-flash-glow 1200ms ease-out;
+}
+@keyframes win-flash-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(212, 168, 74, 0); }
+  50% { box-shadow: 0 0 0 12px rgba(212, 168, 74, 0.4); }
 }
 
 .limits-plaque {

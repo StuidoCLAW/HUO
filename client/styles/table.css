@@ -20,7 +20,7 @@
   background:
     radial-gradient(ellipse at 50% 45%, var(--felt-outer) 0%, var(--felt-inner) 55%, var(--felt-edge) 100%);
   display: grid;
-  grid-template-rows: 44px 1fr auto auto;
+  grid-template-rows: 44px auto auto 1fr auto auto auto;
   overflow: hidden;
 }
 
@@ -52,10 +52,10 @@
   display: flex;
   justify-content: center;
   gap: 18px;
-  padding: 18px 0;
+  padding: 12px 0 8px;
 }
 
-.dealer-row { margin-top: 8px; }
+.dealer-row { margin-top: 8px; padding-bottom: 2px; }
 .player-row { margin-bottom: 8px; }
 
 .card-slot {
@@ -91,7 +91,7 @@
   grid-template-columns: 180px 1fr 180px;
   align-items: center;
   gap: 24px;
-  padding: 0 36px;
+  padding: 8px 36px 16px;
   position: relative;
 }
 
@@ -142,7 +142,9 @@
 
 .community-row {
   display: flex;
-  gap: 12px;
+  justify-content: center;
+  gap: 14px;
+  padding: 18px 0 6px;
 }
 .community-row .card-slot {
   width: 76px;

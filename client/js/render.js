@@ -7,8 +7,10 @@
  */
 
 import { buildCardElement } from './cards.js';
-import { mountCard, flipCard, winFlash } from './animate.js';
+import { mountCard, flipCard, winFlash, wait } from './animate.js';
 import { readTotals, resetBetSpots, setSpot } from './chips.js';
+
+const DEAL_STAGGER_MS = 160;
 
 function fmt(n) {
   const sign = n < 0 ? '-£' : '£';
@@ -58,28 +60,45 @@ export function renderBetting(root, state) {
   renderStatus(root, 'Place your ante and blind, then DEAL.');
 }
 
-export function renderPreflop(root, state) {
+export async function renderPreflop(root, state, { instant = false } = {}) {
   setSpot(root, 'ante', state.stakes.ante);
   setSpot(root, 'blind', state.stakes.blind);
   setSpot(root, 'trips', state.stakes.trips);
   setSpot(root, 'play', 0);
-  // Player hole: face up
-  (state.playerHole || []).forEach((cardId, i) => {
-    const slot = slotFor(root, `player-${i}`);
-    if (slot) mountCard(slot, cardId, { faceUp: true, withDealAnimation: true });
-  });
-  // Dealer hole: face down
-  for (let i = 0; i < 4; i++) {
-    const slot = slotFor(root, `dealer-${i}`);
-    if (slot) mountCard(slot, null, { faceUp: false, withDealAnimation: true });
-  }
-  // Board slots: face down placeholders
+
+  // Mount 5 face-down board placeholders first (no animation — they're scenery).
   for (let i = 0; i < 5; i++) {
     const slot = slotFor(root, `board-${i}`);
     if (slot) mountCard(slot, null, { faceUp: false, withDealAnimation: false });
   }
+
   renderHud(root, state);
   renderStatus(root, 'Check to see the flop, or raise 3× now.');
+
+  if (instant) {
+    (state.playerHole || []).forEach((cardId, i) => {
+      const slot = slotFor(root, `player-${i}`);
+      if (slot) mountCard(slot, cardId, { faceUp: true, withDealAnimation: false });
+    });
+    for (let i = 0; i < 4; i++) {
+      const slot = slotFor(root, `dealer-${i}`);
+      if (slot) mountCard(slot, null, { faceUp: false, withDealAnimation: false });
+    }
+    return;
+  }
+
+  // Deal player cards one at a time, face-up — then dealer cards one at a time, face-down.
+  const playerHole = state.playerHole || [];
+  for (let i = 0; i < playerHole.length; i++) {
+    const slot = slotFor(root, `player-${i}`);
+    if (slot) mountCard(slot, playerHole[i], { faceUp: true, withDealAnimation: true });
+    await wait(DEAL_STAGGER_MS);
+  }
+  for (let i = 0; i < 4; i++) {
+    const slot = slotFor(root, `dealer-${i}`);
+    if (slot) mountCard(slot, null, { faceUp: false, withDealAnimation: true });
+    await wait(DEAL_STAGGER_MS);
+  }
 }
 
 export function renderFlop(root, state) {
@@ -108,19 +127,30 @@ export async function renderResolved(root, state) {
   const r = state.resolution;
   if (!r) return;
 
-  // Reveal any not-yet-dealt board cards.
+  const isFaceDown = (slot) => {
+    const card = slot?.querySelector('.card');
+    return !!card && !card.classList.contains('flipped');
+  };
+
+  // Reveal the board in dramatic order: flop as a trio, then turn, then river.
+  // Only flip slots that are still face-down — cards already revealed stay put.
   if (r.board?.length === 5) {
-    const seenCount = (state.flop?.length || 0) + (state.turn?.length || 0) + (state.river?.length || 0);
-    for (let i = seenCount; i < 5; i++) {
-      const slot = slotFor(root, `board-${i}`);
-      if (slot) await flipCard(slot, r.board[i]);
+    const flopSlots = [0, 1, 2]
+      .map((i) => ({ slot: slotFor(root, `board-${i}`), id: r.board[i] }))
+      .filter((x) => x.slot && isFaceDown(x.slot));
+    if (flopSlots.length) {
+      await Promise.all(flopSlots.map((x) => flipCard(x.slot, x.id)));
     }
+    const turnSlot = slotFor(root, 'board-3');
+    if (turnSlot && isFaceDown(turnSlot)) await flipCard(turnSlot, r.board[3]);
+    const riverSlot = slotFor(root, 'board-4');
+    if (riverSlot && isFaceDown(riverSlot)) await flipCard(riverSlot, r.board[4]);
   }
 
-  // Flip dealer hole cards one by one.
+  // Flip dealer hole cards one by one for casino drama.
   for (let i = 0; i < 4; i++) {
     const slot = slotFor(root, `dealer-${i}`);
-    if (slot) await flipCard(slot, r.dealerHole[i]);
+    if (slot && isFaceDown(slot)) await flipCard(slot, r.dealerHole[i]);
   }
 
   setSpot(root, 'play', r.playMultiplier * state.stakes.ante);

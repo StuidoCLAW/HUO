@@ -65,9 +65,8 @@ const handlers = {
       state = applyStartResponse(state, payload, {
         ante: totals.ante, blind: totals.blind, trips: totals.trips,
       });
-      state = { ...state, balance: state.balance - totals.ante - totals.blind - totals.trips };
       storeSession(state.sessionId, state.stakes);
-      renderPreflop(root, state);
+      await renderPreflop(root, state);
       renderHud(root, state);
       renderActionBar(root, state, handlers);
     } catch (err) { handleApiError(err); }
@@ -164,10 +163,10 @@ document.getElementById('reconnect-btn')?.addEventListener('click', async () => 
     const payload = await api.getSession(stored.sessionId);
     state = applyReconnect(state, payload);
     hideErrorOverlay(root);
-    if (state.phase === 'PREFLOP') renderPreflop(root, state);
-    else if (state.phase === 'FLOP') { renderPreflop(root, state); renderFlop(root, state); }
-    else if (state.phase === 'RIVER') { renderPreflop(root, state); renderFlop(root, state); renderRiver(root, state); }
-    else if (state.phase === 'RESOLVED') { renderPreflop(root, state); await renderResolved(root, state); }
+    await renderPreflop(root, state, { instant: true });
+    if (state.phase === 'FLOP') renderFlop(root, state);
+    else if (state.phase === 'RIVER') { renderFlop(root, state); renderRiver(root, state); }
+    else if (state.phase === 'RESOLVED') await renderResolved(root, state);
     renderHud(root, state);
     renderActionBar(root, state, handlers);
   } catch (err) {
@@ -191,12 +190,12 @@ renderActionBar(root, state, handlers);
 // Attempt reconnect on load if we have a stored session.
 const stored = loadStoredSession();
 if (stored) {
-  api.getSession(stored.sessionId).then((payload) => {
+  api.getSession(stored.sessionId).then(async (payload) => {
     state = applyReconnect(state, payload);
-    if (state.phase === 'RESOLVED') { renderPreflop(root, state); renderResolved(root, state); }
-    else if (state.phase === 'RIVER') { renderPreflop(root, state); renderFlop(root, state); renderRiver(root, state); }
-    else if (state.phase === 'FLOP') { renderPreflop(root, state); renderFlop(root, state); }
-    else if (state.phase === 'PREFLOP') renderPreflop(root, state);
+    await renderPreflop(root, state, { instant: true });
+    if (state.phase === 'FLOP') renderFlop(root, state);
+    else if (state.phase === 'RIVER') { renderFlop(root, state); renderRiver(root, state); }
+    else if (state.phase === 'RESOLVED') await renderResolved(root, state);
     renderHud(root, state);
     renderActionBar(root, state, handlers);
   }).catch(() => {

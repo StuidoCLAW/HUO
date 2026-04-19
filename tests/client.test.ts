@@ -111,6 +111,19 @@ describe('state reducers', () => {
     expect(s1.sessionId).toBe('abc');
     expect(s1.playerHole).toEqual([0, 1, 2, 3]);
     expect(s1.dealerHole).toBeNull();
+    // Stakes are tracked in state, but balance must NOT be deducted at deal —
+    // the server returns net profit in totalReturn, so any deduction here
+    // would double-count and prevent winning bets from paying out.
+    expect(s1.balance).toBe(s0.balance);
+  });
+
+  it('creditResolution adds totalReturn to balance without deducting stakes', async () => {
+    const { initialState, creditResolution } = await import('../client/js/state.js' as any) as any;
+    const s = { ...initialState(), balance: 500 };
+    const winning = creditResolution(s, { totalReturn: 10 } as any);
+    expect(winning.balance).toBe(510);
+    const losing = creditResolution(s, { totalReturn: -15 } as any);
+    expect(losing.balance).toBe(485);
   });
 
   it('applyResolution populates dealer hole + full board', async () => {
@@ -140,7 +153,8 @@ describe('render: dealer info hiding', () => {
       playerHole: [0, 1, 2, 3],
       dealerHole: null, flop: null, turn: null, river: null,
     };
-    renderPreflop(root, state);
+    // instant: true so the test doesn't wait for the casino stagger.
+    await renderPreflop(root, state, { instant: true });
 
     for (let i = 0; i < 4; i++) {
       const slot = root.querySelector(`[data-slot="dealer-${i}"]`)!;

@@ -1,9 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "outputDirectory": "client",
   "rewrites": [
-    { "source": "/", "destination": "/client/index.html" },
-    { "source": "/styles/:path*", "destination": "/client/styles/:path*" },
-    { "source": "/js/:path*", "destination": "/client/js/:path*" },
     { "source": "/healthz", "destination": "/api/index" },
     { "source": "/session/:path*", "destination": "/api/index" }
   ]

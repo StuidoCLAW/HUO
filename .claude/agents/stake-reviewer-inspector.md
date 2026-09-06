@@ -149,6 +149,10 @@ words rather than pointing at an empty defect table.
 The inverse also holds. Do not let a long list of cosmetic nits drag a genuinely
 good game to 1.33. Count, but weight.
 
+You give one value, and it is your final rating on this game. Not a band, not a
+provisional read pending someone else's opinion — the number you would put on the
+form.
+
 ## Output contract
 
 Write two files into the verdict directory you are given (create it if needed).

@@ -70,20 +70,18 @@ describe('the scale is Stake\'s, not ours', () => {
     }
   });
 
-  it('gives the enthusiast the widest range and the veteran a narrow one', () => {
-    const span = (id: ReviewerId) =>
-      REVIEWERS[id].typicalRange[1] - REVIEWERS[id].typicalRange[0];
-    expect(span('enthusiast')).toBeGreaterThan(span('veteran'));
-    expect(span('enthusiast')).toBeGreaterThan(span('inspector'));
+  it('gives no reviewer an expected band to anchor to', () => {
+    for (const id of Object.keys(REVIEWERS) as ReviewerId[]) {
+      const keys = Object.keys(REVIEWERS[id]);
+      expect(keys).not.toContain('typicalRange');
+      expect(keys).not.toContain('expectedRange');
+      expect(JSON.stringify(REVIEWERS[id])).not.toMatch(/cluster|usually score/i);
+    }
   });
 
-  it('keeps every typical range inside the legal scale', () => {
-    for (const id of Object.keys(REVIEWERS) as ReviewerId[]) {
-      const [lo, hi] = REVIEWERS[id].typicalRange;
-      expect(() => scoreToNotch(lo)).not.toThrow();
-      expect(() => scoreToNotch(hi)).not.toThrow();
-      expect(hi).toBeGreaterThan(lo);
-    }
+  it('takes exactly one final score per reviewer, never a range', () => {
+    const card = JSON.stringify({ game: 'g', reviewer: 'veteran', score: [1.67, 2] });
+    expect(() => parseScorecard(card, 'bad.json')).toThrow(/not a Stake reviewer score/);
   });
 });
 

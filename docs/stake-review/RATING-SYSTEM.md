@@ -64,14 +64,16 @@ each axis.
 
 Same remit, same protocol, different temperament.
 
-| Agent | Temperament | Cannot forgive | Typical range |
-|---|---|---|---|
-| `stake-reviewer-veteran` | Fifteen years in studios. Weighs craft and whether the thing is finished. Writes barely anything. | Unfinished work presented as finished | 1.33 – 2.33 |
-| `stake-reviewer-enthusiast` | Plays slots for pleasure. Weighs whether it is fun. Forgives a lot for a real hook. | Boredom, being made to wait, a dead session | 0.67 – 2.67 |
-| `stake-reviewer-inspector` | Came from QA. Weighs accumulated defects by severity. Files numbered, reproducible items. | Anything touching money; a game whose rules disagree with its maths | 1.00 – 2.33 |
+| Agent | Temperament | Cannot forgive |
+|---|---|---|
+| `stake-reviewer-veteran` | Fifteen years in studios. Weighs craft and whether the thing is finished. Writes barely anything. | Unfinished work presented as finished |
+| `stake-reviewer-enthusiast` | Plays slots for pleasure. Weighs whether it is fun. Forgives a lot for a real hook. | Boredom, being made to wait, a dead session |
+| `stake-reviewer-inspector` | Came from QA. Weighs accumulated defects by severity. Files numbered, reproducible items. | Anything touching money; a game whose rules disagree with its maths |
 
-The enthusiast has the widest range by design and should not compress towards the
-middle. The veteran is the best single predictor of what the panel does.
+**Each reviewer returns one value — their final rating on the game.** Not a band,
+not a provisional read. No reviewer is told where their scores "usually" land,
+because a reviewer who knows their expected band scores towards it instead of
+scoring the build.
 
 They score blind — no agent reads another's verdict — and the aggregation is
 mechanical.

@@ -117,6 +117,12 @@ export const AXES: readonly Axis[] = [
   },
 ] as const;
 
+/**
+ * A reviewer returns ONE value from SCALE — the final rating, arrived at from
+ * what they found. There is deliberately no "expected band" here: telling a
+ * reviewer where their scores usually land anchors them before they open the
+ * game, and a review that starts from a prior is not a review.
+ */
 export const REVIEWERS: Record<
   ReviewerId,
   {
@@ -124,8 +130,6 @@ export const REVIEWERS: Record<
     /** How much each axis moves THIS reviewer's number. Not a division of labour. */
     bias: Record<Axis['id'], number>;
     temperament: string;
-    /** Where this reviewer's scores historically cluster. */
-    typicalRange: [number, number];
   }
 > = {
   veteran: {
@@ -135,7 +139,6 @@ export const REVIEWERS: Record<
       'Fifteen years in studios. Weighs craft and whether the thing is finished. ' +
       'Forgives a conventional mechanic executed well; cannot forgive unfinished ' +
       'work presented as finished. Writes barely anything.',
-    typicalRange: [1.33, 2.33],
   },
   enthusiast: {
     title: 'Reviewer 2 — the enthusiast',
@@ -144,7 +147,6 @@ export const REVIEWERS: Record<
       'Plays slots for pleasure and knows the catalogue by feel. Weighs whether ' +
       'it is fun. Forgives rough edges on a game with a real hook; cannot forgive ' +
       'boredom, being made to wait, or a dead session. Widest range on the panel.',
-    typicalRange: [0.67, 2.67],
   },
   inspector: {
     title: 'Reviewer 3 — the inspector',
@@ -153,7 +155,6 @@ export const REVIEWERS: Record<
       'Came from QA. Weighs accumulated defects by severity. Forgives nothing but ' +
       'weights honestly; cannot forgive anything touching money, or a game whose ' +
       'rules screen disagrees with its maths. Files numbered, reproducible items.',
-    typicalRange: [1.0, 2.33],
   },
 };
 

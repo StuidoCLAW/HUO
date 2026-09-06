@@ -1,159 +1,242 @@
-# Calibration — how the rating system was derived
+# Calibration — the rating system, and where every part of it comes from
 
-Reconstructs Stake's scoring from the four review returns Clawbyte has received.
-Everything here is either **observed** (the returns themselves), **derived**
-(arithmetic that follows from them), or **assumed** (labelled as such). Nothing
-is presented as coming from Stake that did not.
+Rebuilt 2026-09-06 against the four game repositories. The first version of this
+document reverse-engineered the rating maths from score arithmetic alone and got
+the scale wrong. That correction is recorded in §7.
+
+Sources are labelled throughout: **published** (Stake's own docs), **recorded**
+(our repos' review history), **measured** (verified against the artefacts here),
+or **assumed**.
 
 ---
 
-## 1. Observed — the four returns
+## 1. Published — how Stake rates games
 
-| Game | Live | Reviewer 1 | Reviewer 2 | Reviewer 3 | Overall awarded |
-|---|---|---|---|---|---|
-| Graveyard Shift | ~Jul 2026 | 2.00 | 2.33 | 3.00 | **3** |
-| Into the Slot-o-Verse | ~Jul 2026 | 2.33 | 1.67 | 1.33 | **2** |
-| Mummy's Riches | recent | 1.67 | 2.33 | 2.00 | **2** |
-| Tiki Taka Madness | recent | 2.33 | 2.00 | 2.00 | **2** |
+From `graveyard-shift/docs/stake-engine/approval-quality.svx`, Stake Engine's
+"Game Quality Rankings" page, vendored into the repo:
 
-Twelve reviewer scores, four headline ratings.
+- Games are rated **0 to 3 stars**. Not 0–5.
+- Each game is assigned **3 anonymous reviewers**.
+- Each reviewer selects **one value from a fixed 10-point scale**:
 
-## 2. Derived — every reviewer score is an exact third
+  > **0** · 0.33 · 0.67 · **1** · 1.33 · 1.67 · **2** · 2.33 · 2.67 · **3**
 
-The twelve values take five distinct forms: 1.33, 1.67, 2.00, 2.33, 3.00.
-Every one is an exact third:
+  "Reviewers select one of these 10 values — they cannot enter arbitrary decimals."
+- The three scores are averaged and **rounded to the nearest whole number**.
+- **Below 1.0 average → 0 stars, NOT APPROVED.** Thread closed and locked for 7
+  days, then resubmission is allowed. "An average of 0.67 does not round up to 1."
+  This policy has been in effect since March 2026.
+
+Stake's own worked example: 2.33 + 2.33 + 3.00 → 2.55 → **3 stars**.
+
+### Tier definitions, quoted
+
+| Stars | Stake's words | Visibility |
+|---|---|---|
+| 3 | "Awarded only to studio-quality games showing exceptional creativity, uniqueness, and attention to detail." | Burst Games, Stake Exclusives, featured in New Releases |
+| 2 | "Games that show considerable creativity or originality. While they may lack polish compared to more established studios, they still demonstrate strong development quality and attention to detail." | Promotional categories only if popularity drives it |
+| 1 | "Games of lower polish that still meet publishing requirements." | Bottom of New Releases, no promotion |
+| 0 | Below 1.0 | Not published |
+
+**The 3-star line is a 2.50 average.** Three reviewers at 2.33 average 2.33 and
+get 2 stars. It takes a 2.67 or a 3.00 in the mix.
+
+---
+
+## 2. Recorded — every review return we hold
+
+| Game | Repo | Reviewer scores | Average | Stars |
+|---|---|---|---|---|
+| Graveyard Shift (round 1, 2026-07-11) | `graveyard-shift` | 2.33 / 2.67 / 2.33 | 2.44 | 2 |
+| Graveyard Shift (re-rate, 2026-07-14) | `graveyard-shift` | not recorded | — | **3** |
+| Into The Slot O' Verse | `SpaceOdyssey` | 2.33 / 1.67 / 1.33 | 1.78 | 2 |
+| Mummy's Riches | `MummysRiches` | 1.67 / 2.33 / 2.00 | 2.00 | 2 |
+| Tiki Taka Madness | `Tiki-Taka-Madness` | 2.33 / 2.00 / 2.00 | 2.11 | 2 |
+
+Primary source for the Graveyard Shift rounds and the Mummy's Riches split:
+`MummysRiches/docs/STAKE-REVIEWER-LESSONS.md`. Tiki Taka's findings:
+`Tiki-Taka-Madness/docs/STAKE-RETEST-CHECKLIST-2026-08-21.md`.
+
+Plain round-half-up reproduces every one of these. `npm test` fails if it stops
+doing so.
+
+**Two things follow, and they are the useful ones:**
+
+1. **The studio's first-pass ceiling is 2.33.** No reviewer has ever given a
+   Clawbyte game more than 2.33 on a first submission.
+2. **The only 3-star came from a re-rate.** Graveyard Shift scored 2.44 → 2 stars,
+   the studio worked the attached fix list, and the re-rate came back at 3. A
+   2-star result is not the end of the conversation — it is the halfway point.
+
+---
+
+## 3. Measured — why each game scored what it did
+
+Verified against the repositories at HEAD, not taken from their own documentation.
+
+### Into The Slot O' Verse — 2.33 / 1.67 / 1.33
+
+**Nine of eleven sound effects are the same file of digital silence.**
 
 ```
-1.33 = 4/3    1.67 = 5/3    2.00 = 6/3    2.33 = 7/3    3.00 = 9/3
+c0a19322779874889ea95389b4f037f3  public/sfx/anticipation.mp3   4044 bytes
+c0a19322779874889ea95389b4f037f3  public/sfx/barrel_break.mp3   4044 bytes
+c0a19322779874889ea95389b4f037f3  public/sfx/big_win.mp3        4044 bytes
+c0a19322779874889ea95389b4f037f3  public/sfx/bonus_token.mp3    4044 bytes
+c0a19322779874889ea95389b4f037f3  public/sfx/click.mp3          4044 bytes
+c0a19322779874889ea95389b4f037f3  public/sfx/reel_stop.mp3      4044 bytes
+c0a19322779874889ea95389b4f037f3  public/sfx/spin.mp3           4044 bytes
+c0a19322779874889ea95389b4f037f3  public/sfx/tease_miss.mp3     4044 bytes
+c0a19322779874889ea95389b4f037f3  public/sfx/win.mp3            4044 bytes
+672f26e6ea13dd0fe0cd783b76918f05  public/sfx/meteor_shower.mp3 49382 bytes
+926edd2dd61e21e8b4f0759d9c530198  public/sfx/portal_beam.mp3  113937 bytes
 ```
 
-Twelve of twelve landing on thirds is not chance. A reviewer's reported score is
-**the mean of three whole-star sub-scores**. That gives the structure:
+The game's own audit (`STAKE-AUDIT-2026-08-12.md`) called this the single largest
+quality-ranking risk and predicted **"as-is I'd score 1.33"**. A real reviewer
+scored exactly 1.33. Meanwhile the four interactive bonus worlds held another
+reviewer at 2.33. That spread — 1.00 wide on the same build — is the clearest
+demonstration in the catalogue that the axes are weighted differently by
+different reviewers.
 
-> **3 reviewers × 3 criteria = 9 integer stars per submission.**
+It is also the only game of the four that does **not** use the Stake `web-sdk` or
+`math-sdk`, so it inherited none of the SDK-level compliance fixes.
 
-Each submission therefore decodes to an integer subtotal per reviewer (3–15) and
-an integer total across the panel (9–45):
+### Mummy's Riches — 1.67 / 2.33 / 2.00
 
-| Game | Subtotals | Panel total | Panel raw |
-|---|---|---|---|
-| Graveyard Shift | 6, 7, 9 | 22 | 22/9 = **2.44** |
-| Into the Slot-o-Verse | 7, 5, 4 | 16 | 16/9 = **1.78** |
-| Mummy's Riches | 5, 7, 6 | 18 | 18/9 = **2.00** |
-| Tiki Taka Madness | 7, 6, 6 | 19 | 19/9 = **2.11** |
+Both low scores are polish, and both are documented in
+`docs/STAKE-REVIEWER-LESSONS.md` §1 round 6:
 
-All four are exact ninths. The panel raw is simply **the sum of nine integer
-stars divided by nine** — which is why the scorer works entirely in ninths and
-no float can move a headline.
+- **1.67, no comment left.** Diagnosed afterwards as scene warm-up landing on the
+  main thread all at once: **7.7fps after PLAY, and a 3.7-second frozen frame**
+  entering Super Free Spins at 6× CPU throttle. Steady-state gameplay held ~50fps,
+  which is why the team never saw it.
+- **2.33, one sentence: "some animations end abruptly."** One disease across eight
+  sites — one-shot clips given display windows shorter than their authored length.
 
-## 3. Derived — the headline rounding, and the one outlier
+Mummy's Riches has the most mature enforcement tooling of the four (a `build:stake`
+pipeline chaining `verify_pos_anchors`, `scan:banned`, `verify_maxwin_sync`,
+`verify_royal_money`, `verify_stake_clean`) and 47 distinct audio files. It still
+only made 2.00, because the two reviewers who mattered were feeling frame times,
+not running checklists.
 
-Three of the four headlines are ordinary round-half-up of the panel raw:
+### Tiki Taka Madness — 2.33 / 2.00 / 2.00
 
-- 1.78 → 2 ✓
-- 2.00 → 2 ✓
-- 2.11 → 2 ✓
+The most conventional return: an itemised reviewer list, all compliance-shaped.
+Bet amount read from cache instead of the latest `authenticate`; both scrollbars
+shown at once in the replay window; restricted terminology ("payline", "payout")
+in menus; decimal-place rules; a base-mode event stalling at "press the Spin
+button". All 29 of its audio files are distinct.
 
-**Graveyard Shift is the exception.** 2.44 → 3 requires rounding up from below
-one half. Its fractional part is exactly 4/9 (0.4444). So in the July cohort the
-round-up threshold sat at or below 4/9; in the current cohort nothing has been
-observed rounding up below 0.5.
+### Graveyard Shift — 2.33 / 2.67 / 2.33, then 3 stars
 
-That single data point is the only *measurable* evidence of standards tightening
-in the returns, and it is worth 1/18 of a star. It is real, and it is small.
+Round 1 came back with **no itemised defect list — the score was the feedback**.
+The studio's own read was that two things dragged it: roughly 35 assets
+byte-identical to the web-sdk `lines` sample game, and the pop-out layout being
+effectively unplayable (8 of 9 interactive controls sat 1–7 real pixels
+off-viewport at 400×225). Its own pre-submission audit had also flagged
+procedural Web Audio as "the single biggest 0-1 star risk".
 
-An equally good reading of the same point: Graveyard Shift had a reviewer at a
-clean 3.00 and the headline followed the ceiling rather than the mean. Both
-readings predict the same thing for us — **that generosity is gone** — so the
-model encodes the numeric version and notes this one here.
+The re-rate after working the fix list came back at 3 stars.
 
-## 4. Assumed — the standards drift
+---
 
-> "Standards have since increased." — Jake
+## 4. Measured — the pattern across all four
 
-Taken as given. The returns cannot measure it beyond the 1/18 above, because the
-recent cohort's raws (2.00 and 2.11) sit in a band where both the old and new
-rounding rules agree, and nothing has scored above 3 for us to test the upper
-thresholds against.
+| | Graveyard | Slot O' Verse | Mummy's | Tiki Taka |
+|---|---|---|---|---|
+| Audio files | 16 | 15 | 49 | 29 |
+| Distinct hashes | 4 | **7** | 47 | 29 |
+| Most-duplicated cue | 5× (sample apps) | **9× (silence)** | 2× | 1× |
+| Uses Stake web-sdk | yes | **no** | yes | yes |
+| Best reviewer score | 2.67 | 2.33 | 2.33 | 2.33 |
+| Worst reviewer score | 2.33 | **1.33** | 1.67 | 2.00 |
 
-So the drift is a **policy constant, not a finding**:
+**Every sub-2.0 score in the catalogue came from polish.** Not one came from
+maths. Not one came from a compliance blocker. Review effort should be
+distributed accordingly, which is why the panel weights it accordingly.
+
+---
+
+## 5. Assumed — the three reviewer personas
+
+Stake do not publish anything about how their three reviewers differ, and our
+records do not show them specialising. The personas in
+`.claude/agents/stake-reviewer-*.md` are a **construct**, justified as follows:
+
+- The observed spreads are wide on identical builds — a full 1.00 between the
+  best and worst reviewer on Slot O' Verse. Something differentiates them.
+- The documented causes of our low scores cluster into exactly three groups:
+  polish felt during play, itemised checklist findings, and creativity holding a
+  score up despite the other two.
+- Three personas covering those three failure modes reproduce every observed
+  score multiset in the catalogue.
+
+That is a defensible design for finding defects. It is **not** a claim that Stake
+assigns lanes. Do not repeat it to Stake as if it were.
+
+---
+
+## 6. Assumed — the standards uplift
+
+> "We must also have a standard increase for each game as Stake have increased
+> difficulty to receive higher ratings." — Jake
+
+Taken as given. There is no way to measure it from five returns whose averages
+all sit between 1.78 and 2.44, and — unlike the first version of this document —
+no rounding anomaly to point at either.
+
+So it is a policy setting, expressed in the natural unit:
 
 ```ts
-export const STANDARDS_DRIFT_STARS = 0.5;   // tools/stake-review/score.ts
+export const STANDARDS_DRIFT_NOTCHES = 1;   // tools/stake-review/score.ts
 ```
 
-Score a build against the July-anchored rubric anchors, then subtract 0.5 to
-predict today's Stake headline. Tune it in that one place, or pass `--drift=N`.
-If a fifth return comes back, re-fit it against the actual result — that is what
-the constant is for.
+**One notch = 0.33 = the smallest move a real reviewer can make.** Each predicted
+reviewer score is docked one step on Stake's own scale before the panel is
+struck, costing 0.33 of a star overall. Override with `--drift=0` to see the raw
+prediction, or a higher integer to model a harsher bar.
 
-**Consequence of drift 0.5, and the single most useful number in this document:**
+The agents are told explicitly not to apply this themselves — they score the build
+as they find it and the aggregator takes the notch. Otherwise it gets
+double-counted.
 
-```
-headline star = round_half_up(panel raw − 0.5)
+---
 
-  3 stars needs panel raw ≥ 3.00   — a straight 3 across all nine criteria
-  4 stars needs panel raw ≥ 4.00   — a straight 4 across all nine criteria
-```
+## 7. The correction
 
-The bar is now **the panel average must equal the star you want**. One 2 among
-nine criteria puts a 3-star submission back to 2 stars. There is no carrying a
-weak lane on the strength of the other two.
+The first version of this system, built before the game repositories were
+available, inferred from the fact that all twelve reviewer scores were exact
+thirds that each reviewer must be averaging three whole-star sub-scores on a
+**1–5 scale**. It then explained Graveyard Shift's 3 stars off a 2.44 average as
+a "generous July rounding" and built a 0.5-star drift constant on top of it.
 
-## 5. Derived — what our back catalogue is worth today
+Reading the repositories corrected three things:
 
-Run `npx tsx tools/stake-review/score.ts --backtest`:
+1. **The scale is 0–3, not 1–5**, and the thirds come from the scale itself —
+   reviewers pick one of ten fixed values. There are no sub-scores.
+2. **2.44 rounded to 2, exactly as it should.** Graveyard Shift's 3 stars came
+   from a **re-rate after fixes**, not from a lenient round. There was no
+   rounding anomaly to explain.
+3. **Below 1.0 is not approved at all** — a cliff the 1–5 model had no concept of,
+   and the single most important number in the system.
 
-```
-  Game                    Cohort     Reviewers            Raw   Model  Awarded  Today
-  Graveyard Shift         jul-2026   2.00 2.33 3.00       2.44  3      3 ok   2
-  Into the Slot-o-Verse   jul-2026   2.33 1.67 1.33       1.78  2      2 ok   1
-  Mummy's Riches          current    1.67 2.33 2.00       2.00  2      2 ok   2
-  Tiki Taka Madness       current    2.33 2.00 2.00       2.11  2      2 ok   2
+Jake's recollection of Graveyard Shift's split (2 / 2.33 / 3) differs from the
+repo record (2.33 / 2.67 / 2.33), but both sum to 7.33 and both average 2.44, so
+the star outcome is unaffected. The repo record is used here.
 
-  Model reproduces all four returns: YES
-  Clawbyte cohort mean panel raw:    2.08
-```
+**The lesson worth keeping:** the arithmetic fitted the data perfectly and the
+model was still wrong. Four data points will support more than one story. Go and
+read the source.
 
-The model reproduces all four awarded ratings exactly. Two things follow:
+---
 
-1. **Graveyard Shift, our best result, is a 2-star game today.** Resubmitted
-   unchanged it would not hold its 3. Do not treat it as the standard to match.
-2. **The house baseline is 2.08.** Four submissions, no trend, no title above
-   the rounding line under current rules. A new build starts from the assumption
-   that it is a 2 until it proves otherwise — which is exactly the posture the
-   three reviewer agents are given.
+## 8. Re-fitting on the next return
 
-## 6. What we do not know
-
-Stated plainly, so nobody mistakes the model for inside knowledge.
-
-- **Stake's real criterion names.** The 3×3 structure is forced by the
-  arithmetic; the nine criteria in `RATING-SYSTEM.md` are our reconstruction of
-  what a casino-game panel weighs, not a published list. The aggregation maths
-  is right regardless of what the criteria are called.
-- **The per-criterion breakdown of any past return.** We know each reviewer's
-  subtotal, not their three individual stars. A subtotal of 7 could be 3+2+2 or
-  1+3+3 — different diagnoses, same score. No past game is used as a
-  per-criterion exemplar anywhere in the rubric for this reason.
-- **Anything above 3 stars.** Every observation sits between 1.33 and 3.00. The
-  4- and 5-star anchors are extrapolated from what the platform's stronger
-  titles visibly do, not fitted to data. Treat them as a direction of travel.
-- **Whether reviewers are specialists.** We assign three lanes because
-  specialisation produces the score spread we see and makes the reviews
-  actionable. Stake may allocate differently.
-- **Whether drift is continuous or stepped.** One constant, revisited on the
-  next return.
-
-## 7. Re-fitting on the next return
-
-When the next review comes back:
-
-1. Add it to `HISTORY` in `tools/stake-review/score.ts` — subtotals as
-   integers, cohort `current`.
-2. Run `npm test`. The back-test will fail if the model no longer reproduces
-   every return.
-3. If it fails on the new row only, adjust `STANDARDS_DRIFT_STARS` or the
-   cohort's `ROUND_UP_AT` until it fits, and record what changed here.
-4. If our own pre-submission panel scored it too high, the anchors are soft —
-   tighten the anchor text, not the constant.
+1. Add it to `HISTORY` in `tools/stake-review/score.ts` with its reviewer scores
+   and a `source` citation.
+2. Run `npm test`. The back-test fails if the model no longer reproduces every
+   recorded return.
+3. Compare the actual return against our panel's prediction for that build. If we
+   scored it high, the agents' anchors are soft — tighten the anchor text, not the
+   drift constant.

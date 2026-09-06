@@ -1,83 +1,95 @@
 # Stake review panel
 
-Three independent reviewer agents plus a deterministic scorer, calibrated
-against the four review returns Stake have given Clawbyte. Predicts the star
-rating a build would receive and names what is costing the stars.
+Three reviewer agents that predict the star rating a game would get from Stake
+Engine, plus a deterministic scorer calibrated against every review return
+Clawbyte has received.
 
-- `RATING-SYSTEM.md` — the rubric and the maths
-- `CALIBRATION.md` — how it was derived from our four returns, and its limits
-- `../../tools/stake-review/rubric.ts` — criteria and star anchors (source of truth)
-- `../../tools/stake-review/score.ts` — aggregation, drift, back-test, CLI
-- `../../.claude/agents/stake-reviewer-*.md` — the three reviewer agents
-- `verdicts/<game>/` — where each panel's scorecards land
+Built from the platform's own rating spec and seven rounds of real reviewer
+contact recorded across the four shipped game repositories — not from guesswork.
 
-## Run a panel on a build
+| File | What it is |
+|---|---|
+| `RATING-SYSTEM.md` | The scale, the maths, the axes, the rules |
+| `CALIBRATION.md` | Where every part of it comes from, per-game analysis, and the limits |
+| `DEFECT-CORPUS.md` | What has actually cost us stars, with sources |
+| `../../.claude/agents/stake-reviewer-*.md` | The three reviewers |
+| `../../tools/stake-review/rubric.ts` | Scale, tiers, axes, personas |
+| `../../tools/stake-review/score.ts` | Aggregation, drift, back-test, CLI |
+| `verdicts/<game>/` | Where each panel's scorecards land |
 
-Score blind, then aggregate. Launch all three in one go so none can see the
-others' output:
+## Run a panel
+
+Launch all three at once so none can see the others' work:
 
 ```
-Review Heads Up Omaha as it stands. Use stake-reviewer-maths,
-stake-reviewer-experience and stake-reviewer-technical, all three in parallel,
-each writing to docs/stake-review/verdicts/huo/.
+Review <game> as it stands, at <path>. Use stake-reviewer-creative,
+stake-reviewer-player and stake-reviewer-compliance, all three in parallel,
+each writing to docs/stake-review/verdicts/<game>/.
 ```
 
-Each agent writes `<lane>.md` (the review) and `<lane>.json` (the scores). Then
-aggregate:
+Then aggregate:
 
 ```bash
-npx tsx tools/stake-review/score.ts --verdicts=docs/stake-review/verdicts/huo
+npx tsx tools/stake-review/score.ts --verdicts=docs/stake-review/verdicts/<game>
 ```
 
 ```
-Heads Up Omaha — panel result
+Into The Slot O' Verse — predicted Stake panel
 
-  Maths & Game Integrity           2.33
-  Player Experience & Presentation 1.67
-  Technical & Compliance           2.00
+  Reviewer 1 — creativity-weighted       2.33
+  Reviewer 2 — polish-weighted           1.33
+  Reviewer 3 — checklist-weighted        1.67
 
-  Panel raw       2.00  (18/9)
-  Standards drift -0.50
-  Adjusted        1.50
+  Panel average    1.78
+  Standards drift  -1 notch per reviewer (-0.33)
+  Adjusted         1.44
 
-  HEADLINE        2 stars
-  For 3 stars     panel raw 3.00 (+1.00, i.e. 9 more criterion stars)
+  PREDICTED        1 star
+  For 2 stars      average 1.50 (+0.06, i.e. 1 reviewer notch)
 ```
 
-(Illustrative shape, not a real result.)
+Those are Into The Slot O' Verse's real reviewer scores. Stake awarded it 2
+stars on a 1.78 average; the panel here predicts 1 star because the standards
+uplift is applied on top. That is the uplift working as intended — a prediction
+is deliberately harsher than the historical return. Use `--drift=0` when you want
+to compare like for like against a past result.
+
+## Reviewing a game in another repository
+
+The agents are game-agnostic — point them at any checkout. They expect to find,
+or be told where to find:
+
+- the built or buildable frontend
+- the maths pack, if there is one
+- the game's own rules/paytable surface
+
+They read `MummysRiches/docs/STAKE-REVIEWER-LESSONS.md` for the reviewer
+checklist when it is available; clone that repo alongside if you are reviewing
+something outside this workspace.
 
 ## Other commands
 
 ```bash
-# Replay the four historical returns through the model
-npx tsx tools/stake-review/score.ts --backtest
-
-# Score an ad-hoc set of nine criterion stars, M1..T3 in order
-npx tsx tools/stake-review/score.ts --scores=2,3,2,2,2,2,3,3,2
-
-# Model a different standards assumption
-npx tsx tools/stake-review/score.ts --verdicts=docs/stake-review/verdicts/huo --drift=0.75
+npx tsx tools/stake-review/score.ts --backtest             # replay every recorded return
+npx tsx tools/stake-review/score.ts --scale                # legal scores + axis bands
+npx tsx tools/stake-review/score.ts --scores=2.33,1.67,2   # ad-hoc panel
+npx tsx tools/stake-review/score.ts --backtest --drift=0   # no standards uplift
 ```
 
-The back-test also runs as part of `npm test`, so the model cannot silently
-drift away from the returns it was fitted to.
+The back-test runs as part of `npm test`, so the model cannot drift away from the
+returns it was fitted to.
 
 ## Working the result
 
-The headline is the least useful part of the output. What you act on is:
+The predicted star is the least useful part of the output.
 
-1. **Blockers**, across all three verdicts — these stop a submission regardless
-   of score.
-2. **The one-star lifts.** Nine of them, one per criterion. Because a 3-star
-   headline needs a straight 3, the job is to find every criterion sitting at 2
-   and take its lift. Ordering by effort against that list is the release plan.
-3. **"What I could not verify."** Anything a reviewer could not check, a Stake
-   reviewer will also fail to check — and will score as absent.
+1. **Blockers**, across all three verdicts — anything pushing the average toward
+   1.0 is an existential problem, not a quality one.
+2. **The three one-notch lifts.** Each reviewer names the single change that would
+   move their own score up one step. Three changes, 0.33 each, is a full star.
+3. **"What I could not verify."** A reviewer will not be able to check it either,
+   and will score it as absent.
 
-## When the next return arrives
-
-Add it to `HISTORY` in `tools/stake-review/score.ts` and run `npm test`. If the
-back-test fails, the model needs re-fitting — the procedure is in
-`CALIBRATION.md` §7. Compare the actual return against our panel's prediction
-for the same build: the gap tells you whether the anchors are soft and by how
-much.
+And the thing the catalogue actually proves: **a 2-star is not the end.**
+Graveyard Shift's 3 stars came from a re-rate after working the attached fix list.
+Getting the list and working it is the highest-yield move available.

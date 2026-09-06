@@ -1,109 +1,103 @@
 # Stake review rating system
 
-The rubric the three reviewer agents score against, and the maths that turns
-nine numbers into a headline star. Derivation is in `CALIBRATION.md`; the
-implementation is `tools/stake-review/`.
+What the three reviewer agents score against, and the maths that turns three
+scores into a star rating. Derivation and sources: `CALIBRATION.md`. What
+actually loses stars: `DEFECT-CORPUS.md`.
 
 ---
 
 ## The maths
 
 ```
-reviewer score  = (that reviewer's 3 criterion stars) / 3      → 1.00 … 5.00 in thirds
-panel raw       = (all 9 criterion stars) / 9                  → 1.00 … 5.00 in ninths
-headline star   = round_half_up(panel raw − 0.5)               → 1 … 5
+Each reviewer picks ONE value from:  0 · 0.33 · 0.67 · 1 · 1.33 · 1.67 · 2 · 2.33 · 2.67 · 3
+panel average = (r1 + r2 + r3) / 3
+stars         = round(panel average)        ... EXCEPT
+average < 1.0 = 0 stars, NOT APPROVED, thread locked 7 days
 ```
 
-Criterion stars are **whole numbers, 1–5**. There are no half stars at criterion
-level — the thirds in a reviewer score arise from averaging three whole stars
-and nothing else. A reviewer who wants to award 2.5 must decide which of their
-three criteria carries the difference.
+There are no sub-scores and no half-values. 1.5 and 2.5 are not scores a Stake
+reviewer can enter, and the scorer rejects them.
 
-The 0.5 is the standards drift (`STANDARDS_DRIFT_STARS`), which converts a score
-made against these anchors into today's expected Stake headline. It is a policy
-constant, not a measurement — see `CALIBRATION.md` §4.
-
-### The gate
-
-| Headline wanted | Panel raw needed | In plain terms |
+| Stars | Panel average | What it gets you |
 |---|---|---|
-| 2 stars | 2.00 | eighteen criterion stars |
-| **3 stars** | **3.00** | **a straight 3 on all nine criteria** |
-| 4 stars | 4.00 | a straight 4 on all nine criteria |
+| **3** | ≥ 2.50 | Burst Games, Stake Exclusives, featured in New Releases |
+| **2** | 1.50 – 2.49 | Promotional placement only if popularity drives it |
+| **1** | 1.00 – 1.49 | Bottom of New Releases, no promotion |
+| **0** | < 1.00 | Not published. 7-day lockout. |
 
-One 2 among nine criteria drops a 3-star submission to 2 stars. A strong lane
-cannot carry a weak one. Clawbyte's four submissions average a 2.08 panel raw
-and none clears the 3-star line under current rules.
+### The two numbers that matter
+
+- **2.50 is the 3-star line.** Three reviewers at 2.33 average 2.33 — that is a
+  2-star game. Reaching 3 needs a 2.67 or a 3.00 in the mix, and no Clawbyte game
+  has been given more than 2.33 on a first pass.
+- **1.00 is a cliff, not a slope.** 0.99 is not "nearly a 1-star game", it is a
+  rejection and a week of lockout. Into The Slot O' Verse's own audit put it at
+  1.33–1.67 with "genuine sub-1.0 risk if all three weight audio".
+
+### Standards uplift
+
+Each predicted reviewer score is docked **one notch (0.33)** before the panel is
+struck — Jake's instruction that Stake have raised the bar since July 2026,
+expressed in the smallest unit a real reviewer can move. It costs 0.33 of a star.
+Pass `--drift=0` for the raw prediction. See `CALIBRATION.md` §6; it is a policy
+setting, not a measurement.
 
 ---
 
-## The nine criteria
+## The three axes
 
-Three lanes, three criteria each, one agent per lane. Full star anchors live in
-`tools/stake-review/rubric.ts` and are reproduced in each agent's definition —
-that file is the single source of truth for the wording.
+Every reviewer weighs all three. What differs is the weighting.
 
-### Maths & Game Integrity — `stake-reviewer-maths`
-
-| Id | Criterion | Measures |
-|---|---|---|
-| M1 | Model correctness & verifiability | Is the RTP/house edge derived, reproducible, independently checkable? Do paytables in the docs match the code? |
-| M2 | Volatility & session shape | Hit frequency, dead runs, win-size distribution, side-bet cadence, bankroll survivability |
-| M3 | Rules integrity & edge cases | Spec compliance, ties/pushes/qualifiers, boundary states, max-win exposure |
-
-### Player Experience & Presentation — `stake-reviewer-experience`
-
-| Id | Criterion | Measures |
-|---|---|---|
-| X1 | Art direction & visual craft | Originality, asset quality, composition, theme coherence, distinct product vs reskin |
-| X2 | Motion, feedback & audio | Timing and easing, anticipation, win celebration proportionality, sound, tactility |
-| X3 | Clarity, usability & accessibility | Thirty-second comprehension, portrait/mobile, contrast, reduced motion, screen readers |
-
-### Technical & Compliance — `stake-reviewer-technical`
-
-| Id | Criterion | Measures |
-|---|---|---|
-| T1 | State integrity & anti-cheat | Server authority, hidden-state leakage, inference channels, RNG, replay resistance |
-| T2 | Engineering quality & resilience | Load, errors, reconnection, session durability, money-path test coverage, dependencies |
-| T3 | Platform & compliance readiness | Integration contract, certification pack, responsible gaming, jurisdictional copy, asset licensing |
-
-### The shape of the anchors
-
-Every criterion uses the same ladder, which is worth internalising:
-
-| Star | What it means |
+| Axis | What it covers |
 |---|---|
-| 1 | Broken, absent, or actively wrong |
-| 2 | Present on the happy path, unmeasured and untuned everywhere else |
-| 3 | Competent, complete, evidenced — and forgettable |
-| 4 | Deliberate and defended, with the evidence a third party could rerun |
-| 5 | Exceptional; the platform would market it |
+| **Creativity, uniqueness, identity** | Is there a mechanic or structure a player could not get elsewhere? Does it read as its own game or a reskin? |
+| **Polish, feel and completeness** | Audio, animation completeness, frame rate on ordinary hardware, speed, win presentation. What ten minutes of play with sound on feels like. |
+| **Compliance and correctness** | The reviewer checklist: RGS bet levels, currency decimals, social scrub, popout layouts, replay, resume, rules accuracy, asset and request hygiene. |
 
-**3 is not a good score, it is the passing score.** Most builds at this studio
-sit at 2 because they are complete on the happy path and unmeasured elsewhere.
-The distance from 2 to 3 is almost always measurement, coverage and tuning —
-not features.
+Run `npx tsx tools/stake-review/score.ts --scale` to print the score bands for
+each axis.
+
+## The three reviewers
+
+| Agent | Weighting | Method |
+|---|---|---|
+| `stake-reviewer-creative` | 50% creativity | Plays every mode and buy tier hunting for a hook. Our historical high scorer — and the one most likely to over-score. |
+| `stake-reviewer-player` | 60% polish | Ten minutes of ordinary play, sound on, CPU throttled. **Every sub-2.0 score in the catalogue came from this axis.** |
+| `stake-reviewer-compliance` | 60% compliance | Works the checklist across currencies, locales, jurisdictions and viewports. Files itemised findings. |
+
+They score blind — no agent reads another's verdict — and the aggregation is
+mechanical.
+
+---
+
+## Where the effort goes
+
+From five returns across four games:
+
+- **Polish caused every low score.** Silence, frame rate, animations ending
+  abruptly. Nothing else has ever taken a Clawbyte game below 2.0.
+- **Maths has never cost us a star.** The constraints still bind (RTP 90–98%, all
+  modes within 0.5%, max win reachable at 1-in-20M or better, hit rate 1-in-3 to
+  1-in-8) but no reviewer has scored us down on them.
+- **Creativity is our strongest axis** and is worth protecting. Into The Slot O'
+  Verse held a 2.33 from one reviewer while shipping in silence, purely on the
+  strength of its four bonus worlds.
+
+Stake's 3-star bar is "exceptional creativity, uniqueness, **and** attention to
+detail". The studio keeps supplying the creativity and losing the stars on the
+attention to detail.
 
 ---
 
 ## Rules for scoring
 
-1. **Score the repository, not the roadmap.** Planned work scores as absent.
-2. **Every score needs three cited evidence items.** `file:line`, a command and
-   its output, a measured number, or a screenshot. A score without citations is
-   not a review.
-3. **Every score needs a one-star lift** — the single change that would move it
-   up by one. One, not a list.
-4. **Default to 2 and make the build climb.** The base rate is 2.08.
-5. **Never award 4 or 5 without naming the artefact that proves it.**
-6. **Reviewers score their own lane only.** The scorer rejects a scorecard that
-   reaches into another lane.
-7. **Reviewers score blind.** No agent reads another's verdict before writing
-   its own. Aggregation happens afterwards, mechanically.
-8. **British English, no hedging.** House style applies to reviews too.
-
----
-
-## Running a panel
-
-See `README.md` in this directory for the commands.
+1. **Score the build, not the documentation.** Documents in our own repos have
+   asserted the opposite of the code. Verify against the artefact.
+2. **Prove the instrument.** A review that could not see the game reports a clean
+   bill of health, which is worse than no review.
+3. **Every claim carries a citation** — `file:line`, a command and its output, a
+   hash, a measured number, or a screenshot.
+4. **Absence is a finding**, and it is scored as absent.
+5. **Only the ten legal values.** Whole stars and halves are not on the scale.
+6. **Blind, then aggregate.** No reviewer reads another before writing.
+7. **British English, no hedging, no emojis** — including in the product.

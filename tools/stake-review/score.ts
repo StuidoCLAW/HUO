@@ -1,230 +1,228 @@
 /**
- * Stake review scoring — panel aggregation, standards drift, back-test.
+ * Stake Engine review scoring.
  *
- * All arithmetic is done in ninths (integers) so no float noise can move a
- * star. A submission is nine integer stars: three reviewers x three criteria.
+ *   Three anonymous reviewers each select ONE value from a fixed 10-point scale
+ *   (0, 0.33, 0.67, 1, 1.33, 1.67, 2, 2.33, 2.67, 3). The three are averaged and
+ *   rounded to the nearest whole star. An average BELOW 1.0 is not a 1-star game
+ *   — it is not approved, and the thread locks for 7 days.
  *
- *   reviewer score = (sum of that reviewer's 3 criteria) / 3
- *   panel raw      = (sum of all 9 criteria) / 9
- *   headline star  = round(panel raw - standards drift)
+ * Source: Stake Engine "Game Quality Rankings"
+ *   graveyard-shift/docs/stake-engine/approval-quality.svx
  *
- * See docs/stake-review/CALIBRATION.md for how this was derived from the four
- * Clawbyte review returns and why the rounding threshold differs by cohort.
+ * Arithmetic is done in notches (integers 0..9) so no float can move a star.
  */
 
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
-  CRITERIA,
-  CRITERIA_BY_REVIEWER,
+  AXES,
   REVIEWERS,
-  type CriterionId,
+  SCALE,
+  TIERS,
+  notchToScore,
+  scoreToNotch,
+  type Axis,
   type ReviewerId,
-  type Star,
+  type ReviewerScore,
+  type StarTier,
 } from './rubric.js';
 
-/** Guards float comparison at the rounding boundary. */
 const EPS = 1e-9;
 
+/** Below this average the game is not approved, regardless of rounding. */
+export const APPROVAL_FLOOR = 1.0;
+
 /**
- * Stars deducted from the panel raw before rounding, to convert a score made
- * against the July-2026-anchored rubric into today's expected Stake headline.
+ * Notches subtracted from each predicted reviewer score before the panel is
+ * struck, to account for Stake raising the bar since the July 2026 cohort.
  *
- * 1/18 of this is observable (Graveyard Shift's headline round-up, which today
- * would not happen). The remainder is Jake's brief that Stake have raised the
- * bar since the July cohort went live. Tune here, or pass --drift=N.
+ * One notch = 0.33 = the smallest move a real reviewer can make, so this is the
+ * natural unit for "assume they are a step harder on you than the back
+ * catalogue suggests". This is a POLICY setting from Jake's brief, not a
+ * measurement — see docs/stake-review/CALIBRATION.md §6. Override with --drift=N.
  */
-export const STANDARDS_DRIFT_STARS = 0.5;
-
-/** Fractional part at or above which a panel raw rounds up to the next star. */
-export const ROUND_UP_AT = {
-  /** July 2026 cohort: Graveyard Shift's 22/9 (0.444 frac) was rounded up. */
-  'jul-2026': 4 / 9,
-  /** Current cohort: no observed round-up below one half. */
-  current: 0.5,
-} as const;
-
-export type Cohort = keyof typeof ROUND_UP_AT;
+export const STANDARDS_DRIFT_NOTCHES = 1;
 
 export interface Scorecard {
   game: string;
   reviewer: ReviewerId;
   date: string;
-  scores: Record<CriterionId, Star>;
+  /** Must be one of the 10 legal values. */
+  score: ReviewerScore;
+  /** Per-axis read, for diagnosis. Does not feed the arithmetic. */
+  axes?: Partial<Record<Axis['id'], number>>;
   blockers?: string[];
-  /** Criterion id -> the single change that would buy one more star. */
-  lifts?: Record<string, string>;
+  findings?: string[];
+  /** The single change that would move this reviewer up one notch. */
+  lift?: string;
 }
 
 export interface PanelResult {
   game: string;
-  /** Integer sum of all nine criterion stars, 9..45. */
-  ninths: number;
+  /** Sum of the three reviewers' notches, 0..27. */
+  notches: number;
   raw: number;
-  reviewerScores: Record<ReviewerId, number>;
-  drift: number;
+  scores: Record<ReviewerId, number>;
+  driftNotches: number;
   adjusted: number;
-  headline: Star;
-  /** Panel raw needed to reach the next headline star under the same drift. */
-  rawForNextStar: number | null;
+  stars: StarTier;
+  approved: boolean;
+  /** Panel average needed for the next star up, under the same drift. */
+  neededForNextStar: number | null;
 }
 
-function isStar(n: unknown): n is Star {
-  return n === 1 || n === 2 || n === 3 || n === 4 || n === 5;
+/** Round to the nearest star, then apply the sub-1.0 approval floor. */
+export function toStars(average: number): StarTier {
+  if (average < APPROVAL_FLOOR - EPS) return 0;
+  const rounded = Math.floor(average + 0.5 + EPS);
+  return Math.min(3, Math.max(0, rounded)) as StarTier;
 }
 
-/** Sum of one reviewer's three criterion stars. Range 3..15. */
-export function reviewerSubtotal(card: Scorecard): number {
-  return CRITERIA_BY_REVIEWER[card.reviewer].reduce((sum, c) => {
-    const s = card.scores[c.id];
-    if (!isStar(s)) {
-      throw new Error(`${card.reviewer} scorecard missing or invalid ${c.id}`);
-    }
-    return sum + s;
-  }, 0);
-}
-
-/** A reviewer's reported score: their three criteria averaged. */
-export function reviewerScore(card: Scorecard): number {
-  return reviewerSubtotal(card) / 3;
-}
-
-/** Round a panel score to a headline star under a cohort's rounding rule. */
-export function toStars(value: number, roundUpAt: number = ROUND_UP_AT.current): Star {
-  const clamped = Math.min(5, Math.max(1, value));
-  const floor = Math.floor(clamped);
-  const frac = clamped - floor;
-  const star = frac >= roundUpAt - EPS ? floor + 1 : floor;
-  return Math.min(5, Math.max(1, star)) as Star;
-}
-
-/**
- * Minimum panel raw needed to land a given headline star today.
- * With drift 0.5 and half-up rounding this is exactly the star itself:
- * a 3-star headline needs a 3.0 panel average.
- */
-export function rawRequiredFor(
-  star: Star,
-  drift: number = STANDARDS_DRIFT_STARS,
-  roundUpAt: number = ROUND_UP_AT.current,
-): number {
-  return star - 1 + roundUpAt + drift;
+/** Lowest panel average that lands a given star tier. */
+export function averageRequiredFor(star: StarTier): number {
+  if (star === 0) return 0;
+  if (star === 1) return APPROVAL_FLOOR;
+  return star - 0.5;
 }
 
 export function aggregate(
   cards: Scorecard[],
-  opts: { drift?: number; roundUpAt?: number } = {},
+  opts: { driftNotches?: number } = {},
 ): PanelResult {
+  if (cards.length !== 3) {
+    throw new Error(`a Stake panel is exactly 3 reviewers, got ${cards.length}`);
+  }
   const seen = new Set(cards.map((c) => c.reviewer));
   for (const id of Object.keys(REVIEWERS) as ReviewerId[]) {
     if (!seen.has(id)) throw new Error(`missing scorecard from reviewer: ${id}`);
   }
-  if (cards.length !== 3) {
-    throw new Error(`expected exactly 3 scorecards, got ${cards.length}`);
+
+  const drift = opts.driftNotches ?? STANDARDS_DRIFT_NOTCHES;
+  const scores = {} as Record<ReviewerId, number>;
+  let notches = 0;
+  let adjustedNotches = 0;
+
+  for (const card of cards) {
+    const n = scoreToNotch(card.score);
+    scores[card.reviewer] = card.score;
+    notches += n;
+    adjustedNotches += Math.max(0, n - drift);
   }
 
-  const drift = opts.drift ?? STANDARDS_DRIFT_STARS;
-  const roundUpAt = opts.roundUpAt ?? ROUND_UP_AT.current;
+  const raw = notches / 9;
+  const adjusted = adjustedNotches / 9;
+  const stars = toStars(adjusted);
+  const next = (stars + 1) as StarTier;
 
-  const ninths = cards.reduce((sum, c) => sum + reviewerSubtotal(c), 0);
-  const raw = ninths / 9;
-  const adjusted = raw - drift;
-  const headline = toStars(adjusted, roundUpAt);
-
-  const reviewerScores = {} as Record<ReviewerId, number>;
-  for (const card of cards) reviewerScores[card.reviewer] = reviewerScore(card);
-
-  const next = (headline + 1) as Star;
   return {
     game: cards[0].game,
-    ninths,
+    notches,
     raw,
-    reviewerScores,
-    drift,
+    scores,
+    driftNotches: drift,
     adjusted,
-    headline,
-    rawForNextStar: next <= 5 ? rawRequiredFor(next, drift, roundUpAt) : null,
+    stars,
+    approved: stars >= 1,
+    neededForNextStar: next <= 3 ? averageRequiredFor(next) : null,
   };
 }
 
 // ---------------------------------------------------------------------------
-// Calibration set — the four Clawbyte submissions Stake have returned.
-// Reviewer scores are stored as the integer subtotal of that reviewer's three
-// criteria, which is exactly how the reported thirds arise:
-//   6/3 = 2.00   7/3 = 2.33   9/3 = 3.00   5/3 = 1.67   4/3 = 1.33
+// Calibration set — every Clawbyte review return we hold a record of.
 // ---------------------------------------------------------------------------
 
 export interface HistoricalReview {
   title: string;
-  cohort: Cohort;
-  /** Integer subtotals, one per reviewer, each 3..15. */
-  subtotals: [number, number, number];
-  /** Reviewer scores exactly as Stake reported them, for the record. */
-  reported: [number, number, number];
-  awardedOverall: Star;
+  repo: string;
+  date: string;
+  /** Reviewer scores as awarded. Empty when the split was not recorded. */
+  reviewerScores: number[];
+  awardedStars: StarTier;
+  /** What the record says drove the score. */
+  driver: string;
+  source: string;
 }
 
 export const HISTORY: readonly HistoricalReview[] = [
   {
-    title: 'Graveyard Shift',
-    cohort: 'jul-2026',
-    subtotals: [6, 7, 9],
-    reported: [2, 2.33, 3],
-    awardedOverall: 3,
+    title: 'Graveyard Shift (round 1)',
+    repo: 'StuidoCLAW/graveyard-shift',
+    date: '2026-07-11',
+    reviewerScores: [2.33, 2.67, 2.33],
+    awardedStars: 2,
+    driver:
+      'No itemised list; the score was the feedback. Suspected drags: byte-identical ' +
+      'web-sdk sample assets, and the pop-out layout being unplayable.',
+    source: 'mummysriches/docs/STAKE-REVIEWER-LESSONS.md §1 round 2',
   },
   {
-    title: 'Into the Slot-o-Verse',
-    cohort: 'jul-2026',
-    subtotals: [7, 5, 4],
-    reported: [2.33, 1.67, 1.33],
-    awardedOverall: 2,
+    title: 'Graveyard Shift (re-rate)',
+    repo: 'StuidoCLAW/graveyard-shift',
+    date: '2026-07-14',
+    reviewerScores: [],
+    awardedStars: 3,
+    driver:
+      'Re-rated to 3 stars after the round-3 fix list was worked. The only 3-star ' +
+      'result in the catalogue, and it came from a second cycle, not a first pass.',
+    source: 'mummysriches/docs/STAKE-REVIEWER-LESSONS.md preamble',
+  },
+  {
+    title: "Into The Slot O' Verse",
+    repo: 'StuidoCLAW/SpaceOdyssey',
+    date: '2026-08',
+    reviewerScores: [2.33, 1.67, 1.33],
+    awardedStars: 2,
+    driver:
+      'Nine of eleven SFX are the same 4,044-byte file of digital silence (md5 ' +
+      'c0a19322…): spin, reel_stop, click, win, big_win, anticipation, tease_miss, ' +
+      'bonus_token, barrel_break. The reels spin in silence. Creativity (four ' +
+      'interactive bonus worlds) held one reviewer at 2.33.',
+    source: 'spaceodyssey/STAKE-AUDIT-2026-08-12.md H7; verified by md5 at HEAD',
   },
   {
     title: "Mummy's Riches",
-    cohort: 'current',
-    subtotals: [5, 7, 6],
-    reported: [1.67, 2.33, 2],
-    awardedOverall: 2,
+    repo: 'StuidoCLAW/MummysRiches',
+    date: '2026-08-11',
+    reviewerScores: [1.67, 2.33, 2.0],
+    awardedStars: 2,
+    driver:
+      'Reviewer #1 scored 1.67 with no comment — diagnosed afterwards as scene ' +
+      'warm-up on the main thread: 7.7fps after PLAY and a 3.7s frozen frame at 6x ' +
+      'CPU throttle. Reviewer #2 scored 2.33 with one sentence: "some animations ' +
+      'end abruptly" — one-shot clips given windows shorter than their authored length.',
+    source: 'mummysriches/docs/STAKE-REVIEWER-LESSONS.md §1 round 6',
   },
   {
     title: 'Tiki Taka Madness',
-    cohort: 'current',
-    subtotals: [7, 6, 6],
-    reported: [2.33, 2, 2],
-    awardedOverall: 2,
+    repo: 'StuidoCLAW/Tiki-Taka-Madness',
+    date: '2026-08-21',
+    reviewerScores: [2.33, 2.0, 2.0],
+    awardedStars: 2,
+    driver:
+      'Itemised checklist findings: bet amount taken from cached data instead of the ' +
+      'latest authenticate; both scrollbars shown at once in the replay window; ' +
+      'restricted terminology (payline/payout) in menus; decimal-place rules; a base ' +
+      'mode event stalled at "press the Spin button".',
+    source: 'tiki-taka-madness/docs/STAKE-RETEST-CHECKLIST-2026-08-21.md',
   },
 ] as const;
 
 export interface BacktestRow extends HistoricalReview {
-  ninths: number;
-  raw: number;
-  modelled: Star;
+  average: number | null;
+  modelled: StarTier | null;
   matches: boolean;
-  /** What this submission would score if resubmitted today, unchanged. */
-  headlineToday: Star;
 }
 
-/**
- * Replays the four known returns through the model. Drift is zero here: these
- * scores were awarded under their own cohort's standards, so the only cohort
- * difference applied is the rounding threshold.
- */
+/** Replays every recorded return through the model. No drift: these are actuals. */
 export function backtest(): BacktestRow[] {
   return HISTORY.map((h) => {
-    const ninths = h.subtotals.reduce((a, b) => a + b, 0);
-    const raw = ninths / 9;
-    const modelled = toStars(raw, ROUND_UP_AT[h.cohort]);
-    return {
-      ...h,
-      ninths,
-      raw,
-      modelled,
-      matches: modelled === h.awardedOverall,
-      headlineToday: toStars(
-        raw - (h.cohort === 'jul-2026' ? STANDARDS_DRIFT_STARS : 0),
-        ROUND_UP_AT.current,
-      ),
-    };
+    if (h.reviewerScores.length === 0) {
+      return { ...h, average: null, modelled: null, matches: true };
+    }
+    const notches = h.reviewerScores.reduce((s, v) => s + scoreToNotch(v), 0);
+    const average = notches / h.reviewerScores.length / 3;
+    const modelled = toStars(average);
+    return { ...h, average, modelled, matches: modelled === h.awardedStars };
   });
 }
 
@@ -242,20 +240,8 @@ export function parseScorecard(json: string, source: string): Scorecard {
     throw new Error(`${source}: unknown reviewer "${String(card.reviewer)}"`);
   }
   if (!card.game) throw new Error(`${source}: missing game`);
-  if (!card.scores) throw new Error(`${source}: missing scores`);
-
-  const own = CRITERIA_BY_REVIEWER[card.reviewer].map((c) => c.id);
-  for (const id of Object.keys(card.scores) as CriterionId[]) {
-    if (!own.includes(id)) {
-      throw new Error(`${source}: ${card.reviewer} may not score ${id}`);
-    }
-    if (!isStar(card.scores[id])) {
-      throw new Error(`${source}: ${id} must be a whole star 1-5`);
-    }
-  }
-  for (const id of own) {
-    if (card.scores[id] === undefined) throw new Error(`${source}: missing ${id}`);
-  }
+  if (card.score === undefined) throw new Error(`${source}: missing score`);
+  scoreToNotch(card.score); // throws with the legal values listed
   return card as Scorecard;
 }
 
@@ -274,89 +260,109 @@ const f2 = (n: number) => n.toFixed(2);
 
 function printBacktest(): void {
   const rows = backtest();
-  console.log('\nCalibration back-test — model vs awarded\n');
-  console.log(
-    '  Game                    Cohort     Reviewers            Raw   Model  Awarded  Today',
-  );
+  console.log('\nCalibration — every recorded Clawbyte return\n');
   for (const r of rows) {
-    const reported = r.reported.map(f2).join(' ');
+    const scores = r.reviewerScores.length
+      ? r.reviewerScores.map(f2).join(' / ')
+      : '(split not recorded)';
+    const avg = r.average === null ? '   —' : f2(r.average);
+    const flag = r.average === null ? '' : r.matches ? ' ok' : ' MISMATCH';
     console.log(
-      `  ${r.title.padEnd(23)} ${r.cohort.padEnd(10)} ${reported.padEnd(20)} ` +
-        `${f2(r.raw)}  ${r.modelled}      ${r.awardedOverall}${r.matches ? ' ok' : ' MISMATCH'}   ${r.headlineToday}`,
+      `  ${r.title.padEnd(26)} ${scores.padEnd(22)} avg ${avg}  ->  ${r.awardedStars}*${flag}`,
     );
   }
-  const ok = rows.every((r) => r.matches);
-  const mean = rows.reduce((s, r) => s + r.raw, 0) / rows.length;
-  console.log(`\n  Model reproduces all four returns: ${ok ? 'YES' : 'NO'}`);
-  console.log(`  Clawbyte cohort mean panel raw:    ${f2(mean)}`);
-  console.log(
-    `  Panel raw needed for 3 stars today: ${f2(rawRequiredFor(3))} ` +
-      `(drift ${f2(STANDARDS_DRIFT_STARS)})\n`,
-  );
+  const scored = rows.filter((r) => r.average !== null);
+  const ok = scored.every((r) => r.matches);
+  const mean = scored.reduce((s, r) => s + (r.average ?? 0), 0) / scored.length;
+  console.log(`\n  Model reproduces every recorded return: ${ok ? 'YES' : 'NO'}`);
+  console.log(`  Catalogue mean panel average:           ${f2(mean)}`);
+  console.log(`  Not approved below:                     ${f2(APPROVAL_FLOOR)}`);
+  console.log(`  3 stars needs:                          ${f2(averageRequiredFor(3))}\n`);
   if (!ok) process.exitCode = 1;
 }
 
-function printPanel(result: PanelResult): void {
-  console.log(`\n${result.game} — panel result\n`);
+function printPanel(r: PanelResult): void {
+  console.log(`\n${r.game} — predicted Stake panel\n`);
   for (const id of Object.keys(REVIEWERS) as ReviewerId[]) {
+    console.log(`  ${REVIEWERS[id].title.padEnd(38)} ${f2(r.scores[id])}`);
+  }
+  console.log(`\n  Panel average    ${f2(r.raw)}`);
+  if (r.driftNotches > 0) {
     console.log(
-      `  ${REVIEWERS[id].title.padEnd(32)} ${f2(result.reviewerScores[id])}`,
+      `  Standards drift  -${r.driftNotches} notch${r.driftNotches === 1 ? '' : 'es'} per reviewer (-${f2(r.driftNotches / 3)})`,
+    );
+    console.log(`  Adjusted         ${f2(r.adjusted)}`);
+  }
+  console.log(`\n  PREDICTED        ${TIERS[r.stars].label}`);
+  if (!r.approved) {
+    console.log(`  NOT APPROVED     average below ${f2(APPROVAL_FLOOR)} — 7-day lockout`);
+  }
+  if (r.neededForNextStar !== null) {
+    const gap = r.neededForNextStar - r.adjusted;
+    const notches = Math.ceil(gap * 9 - EPS);
+    console.log(
+      `  For ${r.stars + 1} stars      average ${f2(r.neededForNextStar)} ` +
+        `(+${f2(gap)}, i.e. ${notches} reviewer notch${notches === 1 ? '' : 'es'})`,
     );
   }
-  console.log(`\n  Panel raw       ${f2(result.raw)}  (${result.ninths}/9)`);
-  const driftSign = result.drift === 0 ? ' ' : '-';
-  console.log(`  Standards drift ${driftSign}${f2(Math.abs(result.drift))}`);
-  console.log(`  Adjusted        ${f2(result.adjusted)}`);
-  console.log(`\n  HEADLINE        ${result.headline} star${result.headline === 1 ? '' : 's'}`);
-  if (result.rawForNextStar !== null) {
-    const gap = result.rawForNextStar - result.raw;
-    console.log(
-      `  For ${result.headline + 1} stars     panel raw ${f2(result.rawForNextStar)} ` +
-        `(+${f2(gap)}, i.e. ${Math.ceil(gap * 9 - EPS)} more criterion stars)\n`,
-    );
-  } else {
-    console.log('');
-  }
+  console.log('');
 }
 
 function main(argv: string[]): void {
   const driftArg = argv.find((a) => a.startsWith('--drift='));
-  const drift = driftArg ? Number(driftArg.split('=')[1]) : STANDARDS_DRIFT_STARS;
+  const driftNotches = driftArg ? Number(driftArg.split('=')[1]) : STANDARDS_DRIFT_NOTCHES;
 
   if (argv.includes('--backtest')) return printBacktest();
+
+  if (argv.includes('--scale')) {
+    console.log('\nLegal reviewer scores:', SCALE.join('  '));
+    console.log('\nAxes:');
+    for (const a of AXES) {
+      console.log(`\n  ${a.id} — ${a.title}`);
+      for (const b of a.bands) console.log(`    ${b.at.padEnd(10)} ${b.means}`);
+    }
+    console.log('');
+    return;
+  }
 
   const scoresArg = argv.find((a) => a.startsWith('--scores='));
   if (scoresArg) {
     const parts = scoresArg.split('=')[1].split(',').map(Number);
-    if (parts.length !== 9) throw new Error('--scores needs 9 values, M1..T3 in order');
-    const cards: Scorecard[] = (Object.keys(REVIEWERS) as ReviewerId[]).map((id, i) => ({
+    if (parts.length !== 3) throw new Error('--scores needs 3 values: creative,player,compliance');
+    const ids = Object.keys(REVIEWERS) as ReviewerId[];
+    const cards: Scorecard[] = ids.map((id, i) => ({
       game: 'ad-hoc',
       reviewer: id,
       date: new Date().toISOString().slice(0, 10),
-      scores: Object.fromEntries(
-        CRITERIA_BY_REVIEWER[id].map((c, j) => [c.id, parts[i * 3 + j]]),
-      ) as Record<CriterionId, Star>,
+      score: notchToScore(scoreToNotch(parts[i])),
     }));
-    return printPanel(aggregate(cards, { drift }));
+    return printPanel(aggregate(cards, { driftNotches }));
   }
 
   const dirArg = argv.find((a) => a.startsWith('--verdicts='));
   if (dirArg) {
-    return printPanel(aggregate(loadVerdicts(dirArg.split('=')[1]), { drift }));
+    return printPanel(aggregate(loadVerdicts(dirArg.split('=')[1]), { driftNotches }));
   }
 
   console.log(`
-Stake review scorer
+Stake review scorer — 0-3 stars, 3 anonymous reviewers
 
   npx tsx tools/stake-review/score.ts --backtest
+  npx tsx tools/stake-review/score.ts --scale
   npx tsx tools/stake-review/score.ts --verdicts=docs/stake-review/verdicts/huo
-  npx tsx tools/stake-review/score.ts --scores=2,3,2,2,2,2,3,3,2
-  ...any of the above with --drift=0.5
+  npx tsx tools/stake-review/score.ts --scores=2.33,1.67,2
+  ...any of the above with --drift=0   (0 = predict raw, no standards uplift)
 
-Criterion order for --scores: ${CRITERIA.map((c) => c.id).join(',')}
+Legal reviewer scores: ${SCALE.join(', ')}
 `);
 }
 
 const invokedDirectly =
   process.argv[1] !== undefined && process.argv[1].endsWith('score.ts');
-if (invokedDirectly) main(process.argv.slice(2));
+if (invokedDirectly) {
+  // Piping into `head` closes stdout early; that is not an error worth a stack trace.
+  process.stdout.on('error', (err: NodeJS.ErrnoException) => {
+    if (err.code !== 'EPIPE') throw err;
+  });
+  main(process.argv.slice(2));
+}

@@ -1,0 +1,53 @@
+{
+  "game": "Vegan Spins",
+  "reviewer": "inspector",
+  "date": "2026-09-06",
+  "score": 1,
+  "axes": {
+    "creativity": 2.33,
+    "polish": 1.0,
+    "compliance": 0.67
+  },
+  "blockers": [
+    "B1 - No RGS integration in any configuration. createRgsClient() has zero call sites; the production bundle contains zero occurrences of wallet/play, wallet/authenticate, wallet/end-round, rgs_url or sessionID (cd dist && grep -ho 'wallet/[a-z-]*' assets/*.js returns nothing). The slot resolves outcomes client-side in src/game/slots/resolveSpin.ts and pays from src/SlotApp.svelte:114 startingBalance = 1000 * MONEY_SCALE. Stage 6; checklist items 20-37 and 73-77 are unreachable, not merely failing.",
+    "B2 - A mock wallet ships in the production bundle. 'demo wallet: insufficient balance', 'demo wallet: a round is already open' and the demo-flight round-id prefix are all present in dist/assets/*.js (src/stake/flightRound.ts:264, wired at src/SlotApp.svelte:1470). Checklist item 88; trap T17; the Slot O' Verse COMPLIANCE.md failure repeated.",
+    "B3 - A force/cheat panel is reachable by any player in the production build. Load ?force-event, click PLAY, pick the Vegan Spins door, click the FORCE tab: buttons force 3/4/5 scatters, five-of-a-kinds, the expanding-wild duel, the shot and a board of wilds. Forced 5x Aubergine moved the balance 1,000.00 -> 1,047.00 on a $1.00 stake. Gate at src/ui/ForcePanel.svelte:47-55. Checklist item 88.",
+    "B4 - The game is completely silent. Zero audio files in the repository or dist (find ... -iname '*.mp3' etc -> 0) and zero playback APIs (no AudioContext, new Audio(, createBufferSource, decodeAudioData, <audio). src/game/sound.svelte.ts:6-8 states 'nothing here plays anything'. A full mixer UI ships and the Settings tab tells the player 'This game has no audio yet'. Stage 1; checklist item 55; DEFECT-CORPUS P1, the axis that scored a real reviewer's 1.33 for merely placeholder cues.",
+    "B5 - The disclaimer is one sentence of the seven required points: src/ui/MenuModal.svelte:1162 'Malfunction voids all pays and plays.' Missing internet requirement, disconnection recovery, expected return over many plays, display accuracy, payout source and copyright. approval-disclaimer.svx: games without a disclaimer will not pass approval. The adjacent FAIR PLAY copy asserts the opposite of the required payout-source point."
+  ],
+  "findings": [
+    "F1 - Social/sweepstakes mode entirely unwired. src/game/social.svelte.ts holds a complete 20-entry swap table with the morphology trap solved, but setSocial() and socialLabel() have no call sites; the module was tree-shaken out (cd dist && grep -ho 'setSocial' assets/*.js | wc -l -> 0). PAYTABLE, PAYOUTS, PAYING, payout, BUY panel, BUY button, BUYING A ROUND and BET render in the clear. Neither ?social=true nor config.jurisdiction.socialCasino is read. Items 2-12; traps T1, T2; defects C3, C7.",
+    "F2 - Currency: one Intl.NumberFormat with no fraction digits and no roundingMode (src/game/money.svelte.ts:82-88) serves balance, bet and win alike. KWD renders Balance/Bet at 3dp (KWD 1,000.000), JPY at 0dp, against the required exactly-2dp; and money rounds UP (147.705 -> $147.71). Items 16, 18; trap T4; defects C4, C8. Aggravated by setCurrency() never being called, so the game runs only in USD and items 17, 19 and 29 are untestable.",
+    "F3 - Four hit-rate/probability numbers in player copy: 'free spins arrive about 1 in 4 spins instead of 1 in 451' and 'free spins land 3x as often' (Rules tab); 'about 1 spin in 451' and 'once in 1,048,576 spins' (About tab). Item 57; trap T12's inverse rule.",
+    "F4 - No spacebar binding of any kind. Twenty Space presses on the idle board left the board, balance ($1,000.00) and win ($0.00) unchanged; no keydown handler exists on the bet action. Item 41; items 42-43 moot in consequence.",
+    "F5 - No UI guide. Menu tabs are Rules/Paytable/Settings/About; no button glossary anywhere in MenuModal.svelte. Six bar controls unexplained. Item 54.",
+    "F6 - Insufficient funds is a silent no-op. src/SlotApp.svelte:695 returns without a message; no insufficient-funds string exists in the UI outside autoplay's stop reason at :2020. Item 24.",
+    "F7 - Max win disagrees three ways in one build. config.ts:125 wincapMult 50,000 renders as a single game-wide pill on the first screen (IntroScreen.svelte:834) directly above the Felix card; BuyPanel.svelte:93 and config.ts:117 say Felix tops out at 9,257x; the published pack has every Felix mode reaching exactly 50,000x. Item 48; trap T11; defect C6. The Rules tab's per-mode PRICE/RTP/MAX WIN table is correct in shape.",
+    "F8 - Advertised max win not reachable at 1-in-20,000,000: base 1-in-25,000,048 and felixBase 1-in-25,000,344, computed from the published weights. Designed in at src/game/wincap.ts:85 CAP_PER_STAKE = 1/25,000,000. approval-checklist.json item 51; checklist item 97.",
+    "F9 - Payout gap below the maximum in all three Felix modes: felixBase jumps 445.92x -> 50,000x (112x with nothing between), felixEnhanced 25.6x, felixSuperEnhanced 25.4x; base 11.7x. The four slot buy/enhancer modes are smooth. Item 99.",
+    "F10 - No internationalisation at all: no locale catalogs, no translate(), no ?lang read in the app. ?lang=zzinvalid loads cleanly with zero console errors (item 38 passes by not reading the parameter) but item 39 fails outright and item 40 has no mechanism.",
+    "F11 - No session, so no resume. Mid-spin reload raises no browser dialog (item 34 genuinely passes, zero beforeunload) but returns to the intro with balance reset to $1,000.00, bet reset to default and the in-flight round lost. Items 30-33, 35.",
+    "F12 - 23.84 MB across 502 unique files loaded before the game is playable, measured from the server log across a full boot. Item 61.",
+    "F13 - MEGA and EPIC win presentations run 20s and 26s in silence (src/game/winBanner.ts:67-68). Skippable. DEFECT-CORPUS P4.",
+    "F14 - Cosmetic: the intro's centre card overlaps its own '& SUPER FREE' subtitle behind the icon plate; at 390x844 the control-bar canvas is 402px wide at x=-6 in a 390px viewport."
+  ],
+  "passed": [
+    "Maths: RTP 96.5000% in all eight modes, spread 0.0000pp, computed from the published lookup tables rather than a config label (items 96, 100, 101). Base non-zero hit rate 1-in-8.56.",
+    "Requests plateau with cache disabled: 591 -> 591 -> 591 -> 592 across intro, doors, idle and five spins with 60s parks; zero 404s, zero 4xx/5xx, zero console errors (items 58-62, 87; trap T9 closed).",
+    "Popout S 400x225 is a genuine re-stacked compact layout with all controls in-viewport, selected by pure geometry at src/ui/bar/barPortrait.ts:219, not pointer:coarse (items 67, 70; trap T13 closed).",
+    "Filename law clean in dist: zero spaces, zero capitalised basenames or directories, enforced by scripts/filename-law.mjs (items 78-81).",
+    "Zero assets byte-identical to any web-sdk sample: 809 game assets hashed against 1,065 web-sdk assets, intersection empty (item 84).",
+    "Zero external origins in the bundle (item 85); zero beforeunload handlers (item 34); touch-action manipulation present (item 46); no emoji in source or bundle.",
+    "902 tests pass across 54 files (npm test, 378.80s)."
+  ],
+  "lift": "Wire createRgsClient(launch) into SlotApp and delete the demo wallet and the force panel from the production build. The source already says this is one line (src/SlotApp.svelte:1459: 'Swapping this one line for createRgsClient(launch) is the whole of what Gate 4 asks'). Until it is done this is not a Stake game and roughly forty checklist items cannot be run against it at all.",
+  "could_not_verify": [
+    "Frame rate - no GPU, Chromium fell back to SwiftShader. Long tasks peaked at 910ms (boot), 936ms (PLAY->doors), 972ms (door->board) and 1,185ms (after six spins): many long tasks but no multi-second frozen frame. I do not quote an fps figure this hardware invalidates.",
+    "All wallet, replay and jurisdiction items (20-37, 73-77, 104) - no RGS client exists in the build to test.",
+    "All non-USD currency behaviour at runtime (16-19, 29) - setCurrency() is never called; F2 is proven from the formatter's construction only.",
+    "Social mode end-to-end (2-14) - no signal is read; F1 is proven from the bundle's contents only.",
+    "One-shot animation display windows vs authored clip lengths (Stage 4 / DEFECT-CORPUS P3) - would have needed the baked rig timings cross-referenced against every call site.",
+    "Item 112 / trap T21 (position:absolute anchored only by filter) - no verify_pos_anchors equivalent exists in this repo and I did not port one.",
+    "Bonus-buy confirmation and autoplay confirmation flows (items 44, 45) - copy inspected, purchase flow not driven."
+  ]
+}

@@ -12,6 +12,6 @@
     "declaration": true,
     "sourceMap": true
   },
-  "include": ["src/**/*", "api/**/*", "tests/**/*"],
+  "include": ["src/**/*", "api/**/*", "tests/**/*", "tools/**/*"],
   "exclude": ["node_modules", "dist"]
 }

@@ -46,7 +46,10 @@ setting, not a measurement.
 
 ## The three axes
 
-Every reviewer weighs all three. What differs is the weighting.
+Every reviewer runs the **same** review — all ten stages of
+`REVIEW-PROTOCOL.md` — and reads all three axes. What differs is how much each
+axis moves their number. There are no lanes: a stage one reviewer skips is a
+stage nobody ran.
 
 | Axis | What it covers |
 |---|---|
@@ -59,11 +62,16 @@ each axis.
 
 ## The three reviewers
 
-| Agent | Weighting | Method |
-|---|---|---|
-| `stake-reviewer-creative` | 50% creativity | Plays every mode and buy tier hunting for a hook. Our historical high scorer — and the one most likely to over-score. |
-| `stake-reviewer-player` | 60% polish | Ten minutes of ordinary play, sound on, CPU throttled. **Every sub-2.0 score in the catalogue came from this axis.** |
-| `stake-reviewer-compliance` | 60% compliance | Works the checklist across currencies, locales, jurisdictions and viewports. Files itemised findings. |
+Same remit, same protocol, different temperament.
+
+| Agent | Temperament | Cannot forgive | Typical range |
+|---|---|---|---|
+| `stake-reviewer-veteran` | Fifteen years in studios. Weighs craft and whether the thing is finished. Writes barely anything. | Unfinished work presented as finished | 1.33 – 2.33 |
+| `stake-reviewer-enthusiast` | Plays slots for pleasure. Weighs whether it is fun. Forgives a lot for a real hook. | Boredom, being made to wait, a dead session | 0.67 – 2.67 |
+| `stake-reviewer-inspector` | Came from QA. Weighs accumulated defects by severity. Files numbered, reproducible items. | Anything touching money; a game whose rules disagree with its maths | 1.00 – 2.33 |
+
+The enthusiast has the widest range by design and should not compress towards the
+middle. The veteran is the best single predictor of what the panel does.
 
 They score blind — no agent reads another's verdict — and the aggregation is
 mechanical.

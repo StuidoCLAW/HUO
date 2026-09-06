@@ -158,24 +158,38 @@ distributed accordingly, which is why the panel weights it accordingly.
 
 ---
 
-## 5. Assumed — the three reviewer personas
+## 5. Assumed — the three reviewer temperaments
 
 Stake do not publish anything about how their three reviewers differ, and our
-records do not show them specialising. The personas in
-`.claude/agents/stake-reviewer-*.md` are a **construct**, justified as follows:
+records do not show them specialising. What the records *do* show is that
+reviewers on the same panel comment on the same ground: in Mummy's Riches round 6
+both reviewers who left feedback gave polish observations, one about frame rate
+and one about animation. They are not lane specialists.
 
-- The observed spreads are wide on identical builds — a full 1.00 between the
-  best and worst reviewer on Slot O' Verse. Something differentiates them.
-- The documented causes of our low scores cluster into exactly three groups:
-  polish felt during play, itemised checklist findings, and creativity holding a
-  score up despite the other two.
-- Three personas covering those three failure modes reproduce every observed
-  score multiset in the catalogue.
+So the panel is built the way the evidence describes: **all three reviewers run
+the same protocol** (`REVIEW-PROTOCOL.md`, ten stages, everything) and differ only
+in temperament — what they weigh, what they forgive, what they cannot forgive.
 
-That is a defensible design for finding defects. It is **not** a claim that Stake
-assigns lanes. Do not repeat it to Stake as if it were.
+The three temperaments are a **construct**, justified as follows:
 
----
+- The observed spreads are wide on identical builds — a full 1.00 between best and
+  worst on Slot O' Verse. Something differentiates the judgement, not the coverage.
+- The recorded reviewer behaviour falls into three recognisable shapes: a terse
+  score with no comment (Mummy's 1.67), an itemised reproducible list (Tiki Taka),
+  and a score carried by enthusiasm for a hook despite obvious faults (Slot O'
+  Verse's 2.33 over silence).
+- Three temperaments covering those shapes reproduce every observed score multiset.
+
+That is a defensible design for finding defects and predicting a spread. It is
+**not** a claim that Stake assigns roles. Do not repeat it to Stake as if it were.
+
+**Why not lanes.** An earlier version of this panel gave each reviewer a distinct
+remit — maths, experience, technical, later creative, player, compliance. It was
+dropped because it contradicts the evidence above and because it creates coverage
+gaps: anything outside a reviewer's remit is checked by nobody, and the studio
+reads three partial reviews as one complete one. Identical coverage also makes
+the spread meaningful — when two reviewers who examined the same evidence
+disagree, that is signal.
 
 ## 6. Assumed — the standards uplift
 

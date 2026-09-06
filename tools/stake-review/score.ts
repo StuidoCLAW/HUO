@@ -328,7 +328,7 @@ function main(argv: string[]): void {
   const scoresArg = argv.find((a) => a.startsWith('--scores='));
   if (scoresArg) {
     const parts = scoresArg.split('=')[1].split(',').map(Number);
-    if (parts.length !== 3) throw new Error('--scores needs 3 values: creative,player,compliance');
+    if (parts.length !== 3) throw new Error('--scores needs 3 values: veteran,enthusiast,inspector');
     const ids = Object.keys(REVIEWERS) as ReviewerId[];
     const cards: Scorecard[] = ids.map((id, i) => ({
       game: 'ad-hoc',

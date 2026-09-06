@@ -19,7 +19,7 @@ export type ReviewerScore = (typeof SCALE)[number];
 /** Star tiers Stake awards. 0 means not approved, not "bad but published". */
 export type StarTier = 0 | 1 | 2 | 3;
 
-export type ReviewerId = 'creative' | 'player' | 'compliance';
+export type ReviewerId = 'veteran' | 'enthusiast' | 'inspector';
 
 /**
  * Stake's published tier definitions, quoted. These are the words the reviewers
@@ -62,8 +62,9 @@ export const TIERS: Record<StarTier, { label: string; stake: string; visibility:
 };
 
 /**
- * The three axes every reviewer weighs. Each reviewer persona weights them
- * differently — that difference is what produces the score spread we observe.
+ * The three axes of judgement. EVERY reviewer reads all three — they all run the
+ * same protocol (docs/stake-review/REVIEW-PROTOCOL.md). What differs is how much
+ * each axis moves a given reviewer's number, which is temperament, not remit.
  */
 export interface Axis {
   id: 'creativity' | 'polish' | 'compliance';
@@ -118,29 +119,41 @@ export const AXES: readonly Axis[] = [
 
 export const REVIEWERS: Record<
   ReviewerId,
-  { title: string; weights: Record<Axis['id'], number>; method: string }
+  {
+    title: string;
+    /** How much each axis moves THIS reviewer's number. Not a division of labour. */
+    bias: Record<Axis['id'], number>;
+    temperament: string;
+    /** Where this reviewer's scores historically cluster. */
+    typicalRange: [number, number];
+  }
 > = {
-  creative: {
-    title: 'Reviewer 1 — creativity-weighted',
-    weights: { creativity: 0.5, polish: 0.25, compliance: 0.25 },
-    method:
-      'Plays every mode and buy tier looking for a hook. Forgives polish where ' +
-      'the structure is genuinely novel. Historically our highest scorer.',
+  veteran: {
+    title: 'Reviewer 1 — the veteran',
+    bias: { creativity: 0.3, polish: 0.45, compliance: 0.25 },
+    temperament:
+      'Fifteen years in studios. Weighs craft and whether the thing is finished. ' +
+      'Forgives a conventional mechanic executed well; cannot forgive unfinished ' +
+      'work presented as finished. Writes barely anything.',
+    typicalRange: [1.33, 2.33],
   },
-  player: {
-    title: 'Reviewer 2 — polish-weighted',
-    weights: { creativity: 0.2, polish: 0.6, compliance: 0.2 },
-    method:
-      'Ten-plus minutes of ordinary play, sound ON, on mid or low-end hardware, ' +
-      'turbo both off and on. Usually leaves no comment — the score is the comment. ' +
-      'Every sub-2.0 score in our history came from this axis.',
+  enthusiast: {
+    title: 'Reviewer 2 — the enthusiast',
+    bias: { creativity: 0.45, polish: 0.35, compliance: 0.2 },
+    temperament:
+      'Plays slots for pleasure and knows the catalogue by feel. Weighs whether ' +
+      'it is fun. Forgives rough edges on a game with a real hook; cannot forgive ' +
+      'boredom, being made to wait, or a dead session. Widest range on the panel.',
+    typicalRange: [0.67, 2.67],
   },
-  compliance: {
-    title: 'Reviewer 3 — checklist-weighted',
-    weights: { creativity: 0.2, polish: 0.2, compliance: 0.6 },
-    method:
-      'Works the reviewer checklist in multiple currencies, locales, jurisdictions ' +
-      'and viewports. Files itemised findings with screenshots.',
+  inspector: {
+    title: 'Reviewer 3 — the inspector',
+    bias: { creativity: 0.25, polish: 0.25, compliance: 0.5 },
+    temperament:
+      'Came from QA. Weighs accumulated defects by severity. Forgives nothing but ' +
+      'weights honestly; cannot forgive anything touching money, or a game whose ' +
+      'rules screen disagrees with its maths. Files numbered, reproducible items.',
+    typicalRange: [1.0, 2.33],
   },
 };
 

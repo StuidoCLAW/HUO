@@ -29,9 +29,9 @@ const card = (reviewer: ReviewerId, score: ReviewerScore): Scorecard => ({
 });
 
 const panel = (a: ReviewerScore, b: ReviewerScore, c: ReviewerScore) => [
-  card('creative', a),
-  card('player', b),
-  card('compliance', c),
+  card('veteran', a),
+  card('enthusiast', b),
+  card('inspector', c),
 ];
 
 describe('the scale is Stake\'s, not ours', () => {
@@ -54,11 +54,35 @@ describe('the scale is Stake\'s, not ours', () => {
     expect(TIERS[0].label).toBe('Not approved');
   });
 
-  it('weights three axes per reviewer, each summing to 1', () => {
+  it('biases three axes per reviewer, each summing to 1', () => {
     expect(AXES).toHaveLength(3);
     for (const id of Object.keys(REVIEWERS) as ReviewerId[]) {
-      const w = REVIEWERS[id].weights;
-      expect(w.creativity + w.polish + w.compliance).toBeCloseTo(1, 10);
+      const b = REVIEWERS[id].bias;
+      expect(b.creativity + b.polish + b.compliance).toBeCloseTo(1, 10);
+    }
+  });
+
+  it('gives every reviewer a stake in all three axes — no lanes', () => {
+    for (const id of Object.keys(REVIEWERS) as ReviewerId[]) {
+      for (const v of Object.values(REVIEWERS[id].bias)) {
+        expect(v).toBeGreaterThan(0.15);
+      }
+    }
+  });
+
+  it('gives the enthusiast the widest range and the veteran a narrow one', () => {
+    const span = (id: ReviewerId) =>
+      REVIEWERS[id].typicalRange[1] - REVIEWERS[id].typicalRange[0];
+    expect(span('enthusiast')).toBeGreaterThan(span('veteran'));
+    expect(span('enthusiast')).toBeGreaterThan(span('inspector'));
+  });
+
+  it('keeps every typical range inside the legal scale', () => {
+    for (const id of Object.keys(REVIEWERS) as ReviewerId[]) {
+      const [lo, hi] = REVIEWERS[id].typicalRange;
+      expect(() => scoreToNotch(lo)).not.toThrow();
+      expect(() => scoreToNotch(hi)).not.toThrow();
+      expect(hi).toBeGreaterThan(lo);
     }
   });
 });
@@ -175,7 +199,7 @@ describe('scorecard validation', () => {
   it('rejects an off-scale score in a verdict file', () => {
     expect(() =>
       parseScorecard(
-        JSON.stringify({ game: 'g', reviewer: 'player', score: 1.5 }),
+        JSON.stringify({ game: 'g', reviewer: 'enthusiast', score: 1.5 }),
         'bad.json',
       ),
     ).toThrow(/not a Stake reviewer score/);
@@ -192,7 +216,7 @@ describe('scorecard validation', () => {
   });
 
   it('rejects a panel with a duplicated reviewer', () => {
-    expect(() => aggregate([card('player', 2), card('player', 2), card('creative', 2)])).toThrow(
+    expect(() => aggregate([card('veteran', 2), card('veteran', 2), card('enthusiast', 2)])).toThrow(
       /missing scorecard/,
     );
   });

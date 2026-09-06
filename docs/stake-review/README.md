@@ -10,6 +10,7 @@ contact recorded across the four shipped game repositories — not from guesswor
 | File | What it is |
 |---|---|
 | `RATING-SYSTEM.md` | The scale, the maths, the axes, the rules |
+| `REVIEW-PROTOCOL.md` | The ten stages every reviewer runs in full |
 | `CALIBRATION.md` | Where every part of it comes from, per-game analysis, and the limits |
 | `DEFECT-CORPUS.md` | What has actually cost us stars, with sources |
 | `../../.claude/agents/stake-reviewer-*.md` | The three reviewers |
@@ -22,9 +23,10 @@ contact recorded across the four shipped game repositories — not from guesswor
 Launch all three at once so none can see the others' work:
 
 ```
-Review <game> as it stands, at <path>. Use stake-reviewer-creative,
-stake-reviewer-player and stake-reviewer-compliance, all three in parallel,
-each writing to docs/stake-review/verdicts/<game>/.
+Review <game> as it stands, at <path>. Use stake-reviewer-veteran,
+stake-reviewer-enthusiast and stake-reviewer-inspector, all three in parallel,
+each running the full protocol in docs/stake-review/REVIEW-PROTOCOL.md and
+writing to docs/stake-review/verdicts/<game>/.
 ```
 
 Then aggregate:
@@ -36,9 +38,9 @@ npx tsx tools/stake-review/score.ts --verdicts=docs/stake-review/verdicts/<game>
 ```
 Into The Slot O' Verse — predicted Stake panel
 
-  Reviewer 1 — creativity-weighted       2.33
-  Reviewer 2 — polish-weighted           1.33
-  Reviewer 3 — checklist-weighted        1.67
+  Reviewer 1 — the veteran               2.33
+  Reviewer 2 — the enthusiast            1.33
+  Reviewer 3 — the inspector             1.67
 
   Panel average    1.78
   Standards drift  -1 notch per reviewer (-0.33)
@@ -72,7 +74,7 @@ something outside this workspace.
 ```bash
 npx tsx tools/stake-review/score.ts --backtest             # replay every recorded return
 npx tsx tools/stake-review/score.ts --scale                # legal scores + axis bands
-npx tsx tools/stake-review/score.ts --scores=2.33,1.67,2   # ad-hoc panel
+npx tsx tools/stake-review/score.ts --scores=2.33,1.67,2   # veteran,enthusiast,inspector
 npx tsx tools/stake-review/score.ts --backtest --drift=0   # no standards uplift
 ```
 

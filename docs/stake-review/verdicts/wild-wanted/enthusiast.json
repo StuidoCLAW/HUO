@@ -1,0 +1,37 @@
+{
+  "game": "Wild Wanted",
+  "reviewer": "enthusiast",
+  "date": "2026-09-07",
+  "score": 2.33,
+  "axes": {
+    "creativity": 2.33,
+    "polish": 2.0,
+    "compliance": 2.0
+  },
+  "blockers": [
+    "FREE SPINS buy ($100) advertises MAX WIN 10,000x on the shop card, in the confirm copy ('Wins climb to the 10,000x max', state-shared/src/constants.ts:234-292) and in the rules table, but the shipped weight table library/publish_files/lookUpTable_bonus_0.csv tops out at 5,000x. Every other mode reaches 10,000x. Displayed != actual on money, at the point of sale.",
+    "52 of the 53 audio cues in the shipped sheet are Mummy's Riches' Ancient Egypt pack at byte-identical sprite offsets - decoded and correlated in-browser, every cue >=0.983 (bgm_main 0.999, sfx_btn_spin 1.000, sfx_reel_stop_4 1.000). sounds.json's own shipped 'source' map names them ('MUMMY VOICE - Angry Roar Attack', 'ANCIENT EGYPT SPECIAL REEL STOP', 'Sword Swoosh', 'engine sprite (Stake scaffold)'). Only bgm_burst is new. A Wild West game with no gunshot in it."
+  ],
+  "findings": [
+    "No gunshot anywhere in a game about shooting: crate breaks fire sfx_bomb_explosion + 'STONE SYMBOL EXPLOSION' (BurstCrates.svelte:172-181) and the dynamite throw fires sfx_sword_swing (DynamiteThrow.svelte:333), confirmed firing on nearly every Super Free Spins spin in capture.",
+    "Base game plays ONE reel-stop cue per spin, never five: 20/20 consecutive base spins measured (mean 1.05, zero spins with 5). Feature spins fire five. sfx_reel_stop_2..5 exist in the sheet with real amplitude and appear zero times in src/ - only sfx_reel_stop_1 is wired (stateGame.svelte.ts:217). Could not fully exclude SwiftShader collapsing the authored 155ms base stagger.",
+    "Win tiers do not escalate at the top: bgm_winlevel_mega and bgm_winlevel_superwin are the same 12,310ms sprite region (offset 149481, identical peak 1.0 / rms 0.20309). sfx_winlevel_substantial == bgm_winlevel_big. sfx_scatter_reveal == jng_intro_fs, so the feature-entry jingle is the scatter-reveal sting.",
+    "'Lowest chips gone' (loading splash) and 'the two lowest-paying symbols do not appear on those reels at all' (rules) are contradicted on screen: Super Free Spins board at FREE SPINS 10 OF 12 shows the J (L4) and 10 (L5) chips. SFR0.csv carries only L1/L2/L3; the shipped superbonus books carry L4 x746 and L5 x206.",
+    "Displayed RTP is a stale config label: rules print 96.0% for all six modes from config.betModes[*].rtp (MenuModal.svelte:283, config.ts:141-207); the shipped weight tables give exactly 96.500% for every mode.",
+    "Identity stops at the canvas edge: the Bonus Buy shop and the settings sheet are stock dark-blue SDK chrome with no trace of the wood/rope/bullet-hole language the game establishes everywhere else.",
+    "The 40-payline set was copied from a named competitor's paytable screen - game_config.py:51-64 cites 'the exact same paylines as Gold cash free' and tools/extract_paylines.py.",
+    "assets/spines/anticipation/anticipation.atlas and .json are byte-identical to the web-sdk sample game (graveyard-shift/apps/price). Texture replaced, skeleton not. Its sound is the scaffold's too.",
+    "Base session is thin in the preview pool I played (one anticipation and two win jingles in 30 spins) - discounted, because previewBooks.ts declares itself a smoke run and the shipped weights give a healthy 1-in-5.27 base hit rate. But across 50 base spins I never wanted the next one; everything I wanted was in the buy menu.",
+    "?lang=de translates headings (FREISPIELE, SUPER-FREISPIELE, BURST-BONUS) and leaves the feature body copy in English on the loading splash.",
+    "Idle is not a plateau: 20 further requests over 60s parked at idle (290 at boot). Not attributed.",
+    "The committed, Vercel-served build/ is a --mode preview build carrying the mock RGS, the 5.1MB preview book pool and __mmCueLog / __WW_ENTRANCE__ / __WW_BOSS_CLIP__ / __WW_BURST_OUTRO__ globals. The production build I made myself is clean of all of it.",
+    "CREDIT - Burst Bonus is a real named mechanic (wheel draws 4-8 shots, break pays, damage wastes the bullet, AUTO SHOOT, prize order honestly declared as pre-fixed) with its own built scene.",
+    "CREDIT - three full feature scenes: saloon, bank vault with a caged gold pile blown open across the round, crate yard. Free-spin counters are in-world objects.",
+    "CREDIT - maths clean: all six modes exactly 96.500%, base non-zero 1-in-5.27, 10,000x reachable in base at 1-in-1,000,000, mode costs match the shop cards and index.json exactly.",
+    "CREDIT - three genuine turbo tiers (reelSpinDelay 155/50/0) with the anticipation extra-hold cut to zero at double bolt, and a documented fix for a ladder inversion where double bolt was slower than single.",
+    "CREDIT - production build verified free of mock RGS, preview books, debug panel and audit globals by direct grep of a build I made.",
+    "CREDIT - Popout S 400x225, portrait 430x932 and landscape 932x430 all playable, no scroll, zero console errors; portrait is a genuinely different layout.",
+    "CREDIT - zero emojis in the built artefact; full seven-point disclaimer, translated; sound disableable; rules cover every visible mechanic with no probability numbers; ?social=true rewrites copy correctly; ?lang=zzinvalid falls back to English with zero errors; filename law clean (3 capitals in 424 files, all vite hashes)."
+  ],
+  "lift": "Make the six sounds this game actually needs, starting with a gunshot: the five reel stops as a rising set (the sprite slots already exist and ship unused), the spin press, the wild-shot, the crate break, the scatter stop and the feature-entry sting. A revolver crack instead of a sword swoosh, splintering wood and a ricochet instead of a rock impact, and five reels landing on five thuds instead of one, would take me to 2.67. bgm_burst proves the studio can do it - it is the one bespoke cue in the sheet and the best thing in it."
+}

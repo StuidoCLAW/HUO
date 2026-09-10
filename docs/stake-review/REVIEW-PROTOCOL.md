@@ -14,10 +14,26 @@ contact. Sources in `CALIBRATION.md`; the findings behind each stage are in
 
 ---
 
-## Stage 0 — Prove your instrument
+## Stage 0 — Prove your instrument, on a copy that is yours alone
 
-Before anything else, get the game running and **take one screenshot**. Confirm it
-is the game.
+**Work from your own extraction of the target, never the shared checkout.** Your
+two colleagues are reviewing the same repository at the same time, and building
+or serving from a shared working tree means one reviewer's `vite build` silently
+overwrites the artefact another is measuring. This has happened: on the Wild
+Wanted panel two reviewers independently caught the build directory changing
+underneath them mid-run.
+
+So before anything else:
+
+```bash
+mkdir -p <your-own-dir> && git -C <target-repo> archive <commit> | tar -x -C <your-own-dir>
+```
+
+Cite everything against that extraction, and record the commit and the path in
+your review. If you must use a shared artefact, hash it before and after and say
+so. A number measured on a tree someone else was writing to is not evidence.
+
+Then get the game running and **take one screenshot**. Confirm it is the game.
 
 A reviewer that never saw the screen reports a clean bill of health, which is
 worse than no review. If you genuinely cannot run it — no browser, no GPU, a

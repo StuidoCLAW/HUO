@@ -1,0 +1,30 @@
+{
+  "game": "Vegan Spins",
+  "reviewer": "veteran",
+  "date": "2026-09-10",
+  "score": 1.33,
+  "axes": { "creativity": 2.33, "polish": 1.67, "compliance": 0.33 },
+  "blockers": [
+    "Game never contacts the RGS: /wallet/authenticate, /wallet/play, /wallet/end-round, /bet/event and /bet/replay are all absent from dist/assets/*.js; a 22-spin live session produced 733 HTTP requests and zero to any wallet endpoint. createRgsClient has one occurrence in src/, inside a comment at SlotApp.svelte:1698. Fails checklist PreChecks 1 and 2.",
+    "Outcomes come from a client-side PRNG (SlotApp.svelte:129 mulberry32(seed); :954 playRound(scatters, bet, source)) and money from a hardcoded local wallet (SlotApp.svelte:117 startingBalance = 1000 * MONEY_SCALE). Felix's Flight runs on createDemoFlightRgs (SlotApp.svelte:1706).",
+    "Outcome-forcing cheat panel ships in the production build: ForcePanel.svelte:47-57 gates on import.meta.env.DEV || q.has('force') || q.has('force-event'); verified open on the built artefact with '5 -> 8 SUPER spins' and 'Eggs — a board of wilds'. Six further dev surfaces reachable in production: ?build-ew, ?build-egg, ?build-fs, ?type, ?frame-size, /wild-preview/, /impact-preview/, /felixs-flight/.",
+    "Advertised 50,000x max win is outside Stake's 1-in-20,000,000 reachability gate in two modes: wincap.ts:86 CAP_PER_STAKE = 1/25,000,000; measured base 1 in 25,000,048 and felixBase 1 in 25,000,343 off the generated pack.",
+    "Disclaimer is 1 of the 7 required points ('Malfunction voids all pays and plays.'); the ABOUT screen instead states outcomes are drawn from the client's own random source, the opposite of the required RGS-settlement wording."
+  ],
+  "findings": [
+    "Social mode can never arm — setSocial() has zero call sites; with ?social=true the rendered output still contains stake, pay, pays, paying, payout, paytable, payline, paylines, bet, buy, buys, money, cash. The socialLabel() swap table (social.svelte.ts:73-101) is dead code.",
+    "Currency launch parameter ignored — setCurrency() called once at module load with its own USD default (money.svelte.ts:90); launched &currency=JPY the bar reads BALANCE $1,000.00 / BET $1.00.",
+    "Money display rounds half-up rather than flooring (money.svelte.ts:110-118): $0.125 -> $0.13, $1.005 -> $1.01, KWD 1.2345 -> KWD 1.235.",
+    "No replay support of any kind: readReplayLaunch/fetchReplayBook never called, 'replay=true' absent from dist. All four Replay Support checklist lines fail.",
+    "Spacebar not bound to the bet button anywhere in SlotApp.svelte; noSpacebar() (jurisdiction.svelte.ts:63) is read by nothing.",
+    "Whole bonus world and every feature are silent — audio call sites exist only in WinCelebration.svelte, ReelLayer.svelte and SlotApp.svelte. No cue for free-spins entry, exit or retrigger; none for the shot, the eggs or the duel; zero audio in FelixFlight.svelte / FlightApp.svelte.",
+    "Settings tab ships the line 'This game has no audio yet — these settings are remembered, and apply the day sound lands.' (MenuModal.svelte:1206, verbatim in dist/assets/slotapp-jk75g4yi.js:250) while 13 cues and a music bed ship.",
+    "The free-spins symbol reads 'FREE SPIN8' — the terminal S closes into an 8 at the emblem's rendered size, persistent across a 1.4s sample; same on the trigger plaque as 'CONGRATULATION8'. The ?type specimen renders HARVEST TIME correctly, so it is a small-caps fault in farmType.ts's stroked centre lines.",
+    "Chance figures in player copy: ABOUT 'about 1 spin in 451' and 'once in 1,048,576 spins'; RULES 'about 1 in 4 spins instead of 1 in 451'; intro card 'about one spin in thirty to one in ten'.",
+    "Identity holds on the board and nowhere else — loading screen is the studio splash, the control bar is Wild Wanted's byte copy with a hue swap (barTheme.ts:1-10, main.ts:9-13), and the rules/settings/about modal is generic studio chrome.",
+    "12 of the 13 shipped sound effects are byte-cut from Tiki Taka Madness (reel_stop_thud.mp3 md5 c15f8426... matches Tiki's 'REEL STOP THUD - Dull, Dry Thump Hit 02'); 15 shipped assets in total are byte-identical to sibling-game files, three from inside web-sdk/apps/*/static/ trees.",
+    "Maths pack is the strongest part of the build: generated from the shipped modules rather than reimplemented, all 8 modes solve to exactly 96.500%, base non-zero hit rate 1 in 8.56, and the rules table agrees with the pack mode-for-mode. config.ts still carries a stale comment claiming Felix caps at 9,257x and does not reach 50,000x; the pack and the rules screen both contradict it.",
+    "Clean where it counts: zero beforeunload handlers, zero 4xx/5xx on any route, console clean including ?lang=zzinvalid, no external fetch origins, page does not scroll, filename law passes on 889 dist files, buy and autoplay confirmations both present, sound disableable from the UI."
+  ],
+  "lift": "Wire createRgsClient(readStakeLaunch()) into SlotApp — authenticate on boot, play on SPIN, end-round on settle — and delete mulberry32 and startingBalance from the round path. It turns eight dead compliance systems back on at once and is the difference between a game and a demo."
+}
